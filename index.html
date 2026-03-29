@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="theme-color" content="#0a0a0e" />
+  <title>Workout Tracker</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icon-192.png" />
+  <style>body { margin: 0; background: #0a0a0e; }</style>
+</head>
+<body>
+  <div id="root"></div>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/recharts@2/umd/Recharts.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script type="text/babel" data-type="module">
+    // Paste your fitness-tracker.jsx contents here,
+    // replacing the import statements with:
+    const { useState, useEffect, useRef, useMemo, useCallback } = React;
+    const { XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar, CartesianGrid, Area, AreaChart } = Recharts;
+
+    // ... rest of the component code ...
+
+    // At the bottom, replace `export default function` with just `function`
+    // and add:
+    ReactDOM.createRoot(document.getElementById('root')).render(
+      React.createElement(FitnessTracker)
+    );
+  </script>
+</body>
+</html>
