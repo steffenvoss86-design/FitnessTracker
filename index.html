@@ -224,6 +224,8 @@ function FitnessTracker() {
   const [newExForm, setNewExForm] = useState({name:"",muscle:"Chest",equipment:"",cue:"",sets:3,reps:"8-12 reps",rule:""});
   const [addExMode, setAddExMode] = useState("library"); // "library" or "new"
   const [planName, setPlanName] = useState("");
+  const [allPlans, setAllPlans] = useState([DEMO_PLAN]);
+  const [allPlanExercises, setAllPlanExercises] = useState(DEMO_PLAN_EXERCISES);
 
   useEffect(() => {
     const dow = new Date().getDay();
@@ -251,6 +253,8 @@ function FitnessTracker() {
       if (data && data.ok) {
         setExercises(data.exercises || DEMO_EXERCISES);
         if (data.activePlan) setActivePlan(data.activePlan);
+        if (data.plans && data.plans.length) setAllPlans(data.plans);
+        if (data.allPlanExercises && data.allPlanExercises.length) setAllPlanExercises(data.allPlanExercises);
         if (data.planExercises && data.planExercises.length) setPlanExercises(data.planExercises);
         setSynced(true);
         showToast("Synced with Google Sheet");
@@ -405,15 +409,23 @@ function FitnessTracker() {
       try {
         const res = await api.post("createPlan", { name, exercises: exList });
         if (res && res.ok) {
-          setActivePlan(prev => ({...prev, PlanID: res.planId, PlanName: name, ValidFrom: todayStr(), IsActive: "TRUE"}));
-          setPlanExercises(prev => prev.map((pe, i) => ({...pe, PlanID: res.planId, PlanExerciseID: res.planId + "-" + (i+1) })));
+          const newPlan = { PlanID: res.planId, PlanName: name, ValidFrom: todayStr(), ValidTo: "", IsActive: "TRUE" };
+          const newPes = planExercises.map((pe, i) => ({...pe, PlanID: res.planId, PlanExerciseID: res.planId + "-" + (i+1)}));
+          setActivePlan(newPlan);
+          setPlanExercises(newPes);
+          setAllPlans(prev => [...prev.map(p => ({...p, IsActive: "FALSE"})), newPlan]);
+          setAllPlanExercises(prev => [...prev, ...newPes]);
           showToast("Plan saved \u2192 Sheet: " + name);
         }
       } catch (err) { showToast("Save failed: " + err.message, 3000); }
     } else {
       const newId = "P" + uid();
-      setActivePlan(prev => ({...prev, PlanID: newId, PlanName: name, ValidFrom: todayStr()}));
-      setPlanExercises(prev => prev.map((pe, i) => ({...pe, PlanID: newId, PlanExerciseID: newId + "-" + (i+1)})));
+      const newPlan = { PlanID: newId, PlanName: name, ValidFrom: todayStr(), ValidTo: "", IsActive: "TRUE" };
+      const newPes = planExercises.map((pe, i) => ({...pe, PlanID: newId, PlanExerciseID: newId + "-" + (i+1)}));
+      setActivePlan(newPlan);
+      setPlanExercises(newPes);
+      setAllPlans(prev => [...prev.map(p => ({...p, IsActive: "FALSE"})), newPlan]);
+      setAllPlanExercises(prev => [...prev, ...newPes]);
       showToast("Plan saved locally: " + name);
     }
     setSavingPlan(false);
@@ -422,6 +434,30 @@ function FitnessTracker() {
   }, [planName, activePlan, planExercises, showToast]);
 
   const muscleGroups = ["Chest","Back","Quads","Hamstrings","Glutes","Shoulders","Biceps","Triceps","Core","Full Body","Conditioning","Recovery"];
+
+  const switchToPlan = useCallback((planId) => {
+    const plan = allPlans.find(p => p.PlanID === planId);
+    if (!plan) return;
+    setActivePlan(plan);
+    const exs = allPlanExercises.filter(pe => pe.PlanID === planId);
+    if (exs.length) setPlanExercises(exs);
+    setEditingPlan(false);
+    setShowAddEx(null);
+  }, [allPlans, allPlanExercises]);
+
+  const activatePlanOnSheet = useCallback(async (planId) => {
+    switchToPlan(planId);
+    // Update allPlans locally
+    setAllPlans(prev => prev.map(p => ({...p, IsActive: p.PlanID === planId ? "TRUE" : "FALSE"})));
+    if (api.connected) {
+      try {
+        await api.post("activatePlan", { planId });
+        showToast("Plan activated \u2192 Sheet");
+      } catch (err) { showToast("Activated locally (Sheet sync failed)", 3000); }
+    } else {
+      showToast("Plan activated (demo mode)");
+    }
+  }, [switchToPlan, showToast]);
 
   // ═══ RENDER ═══
   const css = `
@@ -603,6 +639,17 @@ function FitnessTracker() {
         {/* PLAN */}
         {view === "plans" && (
           <div style={{animation:"slideUp .2s ease"}}>
+            {/* Plan switcher */}
+            <Card style={{padding:10}}>
+              <div style={{fontSize:10,color:"var(--fg3)",fontWeight:700,marginBottom:6,textTransform:"uppercase",letterSpacing:1}}>Active Plan</div>
+              <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                <select value={activePlan ? activePlan.PlanID : ""} onChange={e => activatePlanOnSheet(e.target.value)} style={{flex:1,background:"var(--bg)",border:"1px solid var(--bg4)",borderRadius:8,padding:"9px 12px",color:"var(--fg)",fontSize:13,outline:"none",cursor:"pointer"}}>
+                  {allPlans.map(p => <option key={p.PlanID} value={p.PlanID}>{p.PlanName}{p.IsActive==="TRUE"?" \u2713":""}</option>)}
+                </select>
+              </div>
+              {activePlan && <div style={{fontSize:10,color:"var(--fg3)",fontFamily:"var(--mono)",marginTop:4}}>Since {activePlan.ValidFrom} {"\u00b7"} {planExercises.length} exercises {"\u00b7"} {dayList.length} days</div>}
+            </Card>
+
             {/* Plan header */}
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
               <div style={{flex:1}}>
