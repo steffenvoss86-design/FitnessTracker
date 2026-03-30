@@ -57,8 +57,9 @@ const api = {
     if (!this._url) return null;
     const r = await fetch(this._url, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "text/plain" },
       body: JSON.stringify({ action, key: this._key, ...data }),
+      redirect: "follow",
     });
     if (!r.ok) throw new Error("HTTP " + r.status);
     return r.json();
