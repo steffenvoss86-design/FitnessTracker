@@ -270,6 +270,7 @@ function FitnessTracker() {
   const [logSaved, setLogSaved] = useState({});
   const [synced, setSynced] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [syncDiag, setSyncDiag] = useState(null); // {sessions, logs, err}
   const [editingPlan, setEditingPlan] = useState(false);
   const [savingPlan, setSavingPlan] = useState(false);
   const [showAddEx, setShowAddEx] = useState(null);
@@ -318,6 +319,7 @@ function FitnessTracker() {
   const syncFromApi = useCallback(async (url, key) => {
     if (!url) return;
     setLoading(true);
+    const diag = { sessions: null, logs: null, err: null };
     try {
       api.setUrl(url); api.setKey(key || "");
       const data = await api.get("init");
@@ -328,10 +330,15 @@ function FitnessTracker() {
         if (data.allPlanExercises && data.allPlanExercises.length) setAllPlanExercises(data.allPlanExercises);
         if (data.planExercises && data.planExercises.length) setPlanExercises(data.planExercises);
         setSynced(true);
+        // Init succeeded, so credentials are good. Clear demo logs — real data comes next.
+        // If history returns nothing, user sees an honest empty state instead of stale demo.
+        setLogs([]);
         showToast("Synced with Google Sheet");
       }
       const hist = await api.get("history", { limit: "500" });
+      console.log("[WorkoutTracker] history response:", hist);
       if (hist && hist.ok && hist.sessions) {
+        diag.sessions = hist.sessions.length;
         const flatLogs = [];
         hist.sessions.forEach(s => {
           const wk = Number(s.week) || 1;
@@ -342,11 +349,16 @@ function FitnessTracker() {
             flatLogs.push(log);
           });
         });
-        if (flatLogs.length) setLogs(flatLogs);
+        diag.logs = flatLogs.length;
+        setLogs(flatLogs);
+      } else {
+        diag.err = "history endpoint returned no sessions (ok=" + (hist && hist.ok) + ")";
       }
     } catch (err) {
+      diag.err = err.message;
       showToast("Sync failed: " + err.message, 4000);
     }
+    setSyncDiag(diag);
     setLoading(false);
   }, [showToast]);
 
@@ -878,7 +890,7 @@ input[type=number]{-moz-appearance:textfield}
             <Card>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:12}}>
                 <div style={{fontSize:12,color:"var(--fg2)",fontWeight:600}}>Weekly Volume by Muscle</div>
-                <div style={{fontSize:10,color:"var(--fg3)",fontFamily:"var(--mono)"}}>Blk {currentBlock} \u00b7 Wk {currentWeek}</div>
+                <div style={{fontSize:10,color:"var(--fg3)",fontFamily:"var(--mono)"}}>Blk {currentBlock} · Wk {currentWeek}</div>
               </div>
               {volumeByMuscle.length > 0 ? (
                 <ResponsiveContainer width="100%" height={Math.max(160, volumeByMuscle.length * 30)}>
@@ -937,7 +949,7 @@ input[type=number]{-moz-appearance:textfield}
                           <div key={di} style={{width:6,height:6,borderRadius:"50%",background: di < uniqueDays ? blockColor : "var(--bg4)"}} />
                         ))}
                       </div>
-                      <div style={{fontSize:8,color:"var(--fg3)",marginTop:4,fontFamily:"var(--mono)"}}>{fmtDate(w.firstDate)} \u00b7 {uniqueDays}d</div>
+                      <div style={{fontSize:8,color:"var(--fg3)",marginTop:4,fontFamily:"var(--mono)"}}>{fmtDate(w.firstDate)} · {uniqueDays}d</div>
                     </button>
                   );
                 })}
@@ -961,11 +973,11 @@ input[type=number]{-moz-appearance:textfield}
                     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 14px",borderBottom:"1px solid var(--bg3)",gap:8}}>
                       <div style={{minWidth:0,flex:1}}>
                         <div style={{display:"flex",alignItems:"baseline",gap:8,flexWrap:"wrap"}}>
-                          <span style={{fontWeight:700,fontSize:14}}>Block {weekDetail.block} \u00b7 Week {weekDetail.week}</span>
+                          <span style={{fontWeight:700,fontSize:14}}>Block {weekDetail.block} · Week {weekDetail.week}</span>
                           {weekDetail.runTotal > 1 && <span style={{fontSize:10,color:"var(--orange)",fontFamily:"var(--mono)",background:"rgba(244,168,103,.15)",padding:"2px 6px",borderRadius:4}}>run {weekDetail.runIndex}/{weekDetail.runTotal}</span>}
                         </div>
                         <div style={{fontSize:10,color:"var(--fg3)",fontFamily:"var(--mono)",marginTop:2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
-                          {weekDetail.planName} \u00b7 {weekDetail.dates.length > 1 ? (weekDetail.dates[0] + " \u2192 " + weekDetail.dates[weekDetail.dates.length-1]) : weekDetail.dates[0]}
+                          {weekDetail.planName} · {weekDetail.dates.length > 1 ? (weekDetail.dates[0] + " → " + weekDetail.dates[weekDetail.dates.length-1]) : weekDetail.dates[0]}
                         </div>
                       </div>
                       <button onClick={() => setCalSelectedWeek(null)} title="Close" style={{background:"none",border:"none",color:"var(--fg3)",fontSize:16,cursor:"pointer",padding:"2px 6px",lineHeight:1,flexShrink:0}}>{"\u2715"}</button>
@@ -1211,6 +1223,15 @@ input[type=number]{-moz-appearance:textfield}
                 {synced && <button onClick={() => syncFromApi(apiUrl,apiKey)} style={{padding:"10px 16px",borderRadius:8,border:"1px solid var(--bg4)",background:"none",color:"var(--fg2)",fontWeight:600,fontSize:13,cursor:"pointer"}}>Refresh</button>}
               </div>
               {synced && <div style={{marginTop:10,padding:"8px 12px",background:"rgba(103,244,168,.08)",border:"1px solid var(--green)",borderRadius:8,fontSize:12,color:"var(--green)",display:"flex",alignItems:"center",gap:8}}><span style={{width:8,height:8,borderRadius:"50%",background:"var(--green)"}} /> Connected to Google Sheet</div>}
+              {syncDiag && (
+                <div style={{marginTop:10,padding:"8px 12px",background:"var(--bg)",border:"1px solid var(--bg4)",borderRadius:8,fontSize:11,color:"var(--fg2)",fontFamily:"var(--mono)",lineHeight:1.6}}>
+                  <div style={{color:"var(--fg3)",textTransform:"uppercase",letterSpacing:.5,fontSize:9,marginBottom:4}}>Last sync diagnostic</div>
+                  <div>history sessions: <b style={{color:syncDiag.sessions?"var(--green)":"var(--orange)"}}>{syncDiag.sessions === null ? "—" : syncDiag.sessions}</b></div>
+                  <div>flattened logs: <b style={{color:syncDiag.logs?"var(--green)":"var(--orange)"}}>{syncDiag.logs === null ? "—" : syncDiag.logs}</b></div>
+                  {syncDiag.err && <div style={{color:"var(--red)",marginTop:4}}>err: {syncDiag.err}</div>}
+                  {syncDiag.sessions === 0 && <div style={{color:"var(--orange)",marginTop:4}}>Sheet is reachable but history returned 0 sessions. Check your Apps Script <code>history</code> handler.</div>}
+                </div>
+              )}
             </Card>
 
             <Card>
