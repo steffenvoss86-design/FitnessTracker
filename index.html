@@ -337,7 +337,10 @@ function FitnessTracker() {
       }
       const hist = await api.get("history", { limit: "500" });
       console.log("[WorkoutTracker] history response:", hist);
-      if (hist && hist.ok && hist.sessions) {
+      if (hist && hist.ok === false) {
+        diag.err = "server: " + (hist.error || "unknown error");
+        showToast("History endpoint error \u2014 see Setup", 4000);
+      } else if (hist && hist.ok && hist.sessions) {
         diag.sessions = hist.sessions.length;
         const flatLogs = [];
         hist.sessions.forEach(s => {
