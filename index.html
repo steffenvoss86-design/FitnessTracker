@@ -1,31 +1,28 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <meta name="mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="theme-color" content="#0a0a0e" />
-  <title>Workout Tracker</title>
-  <style>body{margin:0;background:#0a0a0e;}</style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="theme-color" content="#0a0a0e" />
+<title>Workout Tracker</title>
+<style>body{margin:0;background:#0a0a0e;}</style>
 </head>
 <body>
 <div id="root"></div>
-
 <link rel="icon" href="data:," />
-
 <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
 <script src="https://unpkg.com/prop-types@15/prop-types.min.js" crossorigin></script>
 <script src="https://unpkg.com/recharts@2.12.7/umd/Recharts.js" crossorigin></script>
 <script src="https://unpkg.com/@babel/standalone@7.24.0/babel.min.js" crossorigin></script>
-
 <script type="text/babel">
 const { useState, useEffect, useRef, useMemo, useCallback } = React;
 const { XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar, CartesianGrid, Area, AreaChart } = Recharts;
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// LOCALSTORAGE — persists API URL and key across sessions
+// LOCALSTORAGE
 // ═══════════════════════════════════════════════════════════════════════════════
 const LS = {
   get(k, fallback="") { try { return localStorage.getItem("wt_"+k) || fallback; } catch(e) { return fallback; } },
@@ -42,7 +39,6 @@ const api = {
   setKey(key) { this._key = key.trim(); },
   get url() { return this._url; },
   get connected() { return !!this._url; },
-
   async get(action, params = {}) {
     if (!this._url) return null;
     const qs = new URLSearchParams({ action, key: this._key, ...params });
@@ -52,7 +48,6 @@ const api = {
     if (data && !data.ok && data.error && data.error.includes("Unauthorized")) throw new Error("Invalid API key");
     return data;
   },
-
   async post(action, data = {}) {
     if (!this._url) return null;
     const r = await fetch(this._url, {
@@ -67,14 +62,18 @@ const api = {
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// DEMO DATA
+// CONSTANTS
 // ═══════════════════════════════════════════════════════════════════════════════
 const MUSCLE_COLORS = {
   Chest: "#e74c3c", Back: "#3498db", Quads: "#2ecc71", Hamstrings: "#e67e22",
   Glutes: "#9b59b6", Shoulders: "#f1c40f", Biceps: "#1abc9c", Triceps: "#e84393",
   Core: "#fd79a8", "Full Body": "#636e72", Conditioning: "#00b894", Recovery: "#74b9ff",
 };
+const BLOCK_COLORS = ["#67a8f4", "#c5f467", "#f4a867", "#f467a8", "#a867f4", "#67f4d4"];
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// DEMO DATA
+// ═══════════════════════════════════════════════════════════════════════════════
 const DEMO_EXERCISES = [
   { ExerciseName: "Barbell Bench Press", MuscleGroup: "Chest", Equipment: "Barbell", DefaultCue: "Retract scapula, feet planted." },
   { ExerciseName: "Incline DB Bench", MuscleGroup: "Chest", Equipment: "Dumbbells", DefaultCue: "Low incline 30\u00b0. Focus on stretch." },
@@ -127,40 +126,41 @@ const DEMO_PLAN_EXERCISES = [
   { PlanExerciseID:"P1-22",PlanID:"P1",DayNumber:5,DayLabel:"FRI",DayName:"Hybrid",SortOrder:4,ExerciseName:"Cooldown & Mobility",TargetSets:1,TargetReps:"\u2014",ProgressionRule:"" },
 ];
 
+// Demo logs carry Week + Block so the History calendar is populated out of the box.
 const DEMO_LOG = [
-  { LogID:"d01",Date:"2026-01-26",PlanID:"P1",DayNumber:1,ExerciseName:"Barbell Bench Press",S1Reps:8,S1Weight:70,S2Reps:8,S2Weight:80,S3Reps:7,S3Weight:80,S4Reps:6,S4Weight:80,S5Reps:5,S5Weight:85,RPE:"",Note:"" },
-  { LogID:"d02",Date:"2026-01-26",PlanID:"P1",DayNumber:1,ExerciseName:"Incline DB Bench",S1Reps:12,S1Weight:42,S2Reps:12,S2Weight:42,S3Reps:4,S3Weight:52,RPE:"",Note:"" },
-  { LogID:"d03",Date:"2026-01-26",PlanID:"P1",DayNumber:1,ExerciseName:"Lateral Raises",S1Reps:13,S1Weight:19,S2Reps:12,S2Weight:19,S3Reps:12,S3Weight:19,RPE:"",Note:"" },
-  { LogID:"d04",Date:"2026-01-26",PlanID:"P1",DayNumber:1,ExerciseName:"Shoulder Prehab",S1Reps:20,S1Weight:15,S2Reps:18,S2Weight:15,S3Reps:18,S3Weight:15,RPE:"",Note:"" },
-  { LogID:"d05",Date:"2026-01-27",PlanID:"P1",DayNumber:2,ExerciseName:"Back Squat",S1Reps:6,S1Weight:80,S2Reps:6,S2Weight:90,S3Reps:6,S3Weight:95,S4Reps:5,S4Weight:95,S5Reps:5,S5Weight:97.5,RPE:"",Note:"" },
-  { LogID:"d06",Date:"2026-01-27",PlanID:"P1",DayNumber:2,ExerciseName:"Romanian Deadlift",S1Reps:8,S1Weight:90,S2Reps:8,S2Weight:90,S3Reps:8,S3Weight:90,RPE:"",Note:"" },
-  { LogID:"d07",Date:"2026-01-27",PlanID:"P1",DayNumber:2,ExerciseName:"Goblet Squat",S1Reps:15,S1Weight:26,S2Reps:15,S2Weight:26,S3Reps:15,S3Weight:26,RPE:"",Note:"" },
-  { LogID:"d08",Date:"2026-01-28",PlanID:"P1",DayNumber:3,ExerciseName:"Bent-over Row",S1Reps:8,S1Weight:80,S2Reps:8,S2Weight:85,S3Reps:8,S3Weight:90,S4Reps:8,S4Weight:90,S5Reps:8,S5Weight:90,RPE:"",Note:"" },
-  { LogID:"d09",Date:"2026-01-28",PlanID:"P1",DayNumber:3,ExerciseName:"Biceps Curls",S1Reps:14,S1Weight:24,S2Reps:15,S2Weight:24,S3Reps:8,S3Weight:24,RPE:"",Note:"" },
-  { LogID:"d10",Date:"2026-01-29",PlanID:"P1",DayNumber:4,ExerciseName:"Deadlift",S1Reps:8,S1Weight:90,S2Reps:6,S2Weight:100,S3Reps:5,S3Weight:110,S4Reps:5,S4Weight:110,S5Reps:0,S5Weight:110,RPE:"",Note:"" },
-  { LogID:"d11",Date:"2026-01-29",PlanID:"P1",DayNumber:4,ExerciseName:"Kettlebell Swings",S1Reps:25,S1Weight:16,S2Reps:25,S2Weight:16,S3Reps:25,S3Weight:16,RPE:"",Note:"" },
-  { LogID:"d12",Date:"2026-02-02",PlanID:"P1",DayNumber:1,ExerciseName:"Barbell Bench Press",S1Reps:8,S1Weight:70,S2Reps:8,S2Weight:77.5,S3Reps:8,S3Weight:80,S4Reps:7,S4Weight:82.5,S5Reps:6,S5Weight:83.5,RPE:8,Note:"" },
-  { LogID:"d13",Date:"2026-02-02",PlanID:"P1",DayNumber:1,ExerciseName:"Incline DB Bench",S1Reps:10,S1Weight:52,S2Reps:10,S2Weight:52,S3Reps:8,S3Weight:52,RPE:"",Note:"" },
-  { LogID:"d14",Date:"2026-02-02",PlanID:"P1",DayNumber:1,ExerciseName:"Lateral Raises",S1Reps:10,S1Weight:24,S2Reps:10,S2Weight:24,S3Reps:10,S3Weight:24,RPE:"",Note:"" },
-  { LogID:"d15",Date:"2026-02-09",PlanID:"P1",DayNumber:1,ExerciseName:"Barbell Bench Press",S1Reps:8,S1Weight:70,S2Reps:8,S2Weight:80,S3Reps:8,S3Weight:80,S4Reps:5,S4Weight:85,S5Reps:6,S5Weight:85,RPE:"",Note:"" },
-  { LogID:"d16",Date:"2026-02-09",PlanID:"P1",DayNumber:1,ExerciseName:"Incline DB Bench",S1Reps:11,S1Weight:52,S2Reps:9,S2Weight:52,S3Reps:7,S3Weight:52,RPE:"",Note:"" },
-  { LogID:"d17",Date:"2026-02-10",PlanID:"P1",DayNumber:2,ExerciseName:"Back Squat",S1Reps:6,S1Weight:80,S2Reps:5,S2Weight:90,S3Reps:5,S3Weight:90,S4Reps:5,S4Weight:95,S5Reps:5,S5Weight:95,RPE:"",Note:"" },
-  { LogID:"d18",Date:"2026-02-10",PlanID:"P1",DayNumber:2,ExerciseName:"Romanian Deadlift",S1Reps:12,S1Weight:90,S2Reps:12,S2Weight:90,S3Reps:8,S3Weight:90,RPE:"",Note:"" },
-  { LogID:"d19",Date:"2026-02-11",PlanID:"P1",DayNumber:3,ExerciseName:"Bent-over Row",S1Reps:8,S1Weight:80,S2Reps:8,S2Weight:85,S3Reps:8,S3Weight:90,S4Reps:5,S4Weight:95,S5Reps:5,S5Weight:95,RPE:"",Note:"" },
-  { LogID:"d20",Date:"2026-02-12",PlanID:"P1",DayNumber:4,ExerciseName:"Deadlift",S1Reps:8,S1Weight:95,S2Reps:8,S2Weight:100,S3Reps:6,S3Weight:110,S4Reps:5,S4Weight:115,S5Reps:5,S5Weight:115,RPE:"",Note:"" },
-  { LogID:"d21",Date:"2026-02-16",PlanID:"P1",DayNumber:1,ExerciseName:"Barbell Bench Press",S1Reps:8,S1Weight:70,S2Reps:8,S2Weight:80,S3Reps:7,S3Weight:82.5,S4Reps:6,S4Weight:85,S5Reps:5,S5Weight:85,RPE:"",Note:"" },
-  { LogID:"d22",Date:"2026-02-16",PlanID:"P1",DayNumber:1,ExerciseName:"Incline DB Bench",S1Reps:12,S1Weight:52,S2Reps:8,S2Weight:52,S3Reps:12,S3Weight:42,RPE:"",Note:"" },
-  { LogID:"d23",Date:"2026-02-16",PlanID:"P1",DayNumber:1,ExerciseName:"Lateral Raises",S1Reps:14,S1Weight:25,S2Reps:12,S2Weight:24,S3Reps:12,S3Weight:24,RPE:"",Note:"" },
-  { LogID:"d24",Date:"2026-02-17",PlanID:"P1",DayNumber:2,ExerciseName:"Back Squat",S1Reps:5,S1Weight:80,S2Reps:5,S2Weight:90,S3Reps:5,S3Weight:95,S4Reps:5,S4Weight:95,S5Reps:5,S5Weight:97.5,RPE:"",Note:"" },
-  { LogID:"d25",Date:"2026-02-17",PlanID:"P1",DayNumber:2,ExerciseName:"Romanian Deadlift",S1Reps:8,S1Weight:90,S2Reps:8,S2Weight:100,S3Reps:8,S3Weight:100,RPE:"",Note:"" },
-  { LogID:"d26",Date:"2026-02-18",PlanID:"P1",DayNumber:3,ExerciseName:"Bent-over Row",S1Reps:10,S1Weight:80,S2Reps:8,S2Weight:90,S3Reps:8,S3Weight:90,S4Reps:7,S4Weight:95,S5Reps:5,S5Weight:97.5,RPE:"",Note:"" },
-  { LogID:"d27",Date:"2026-02-19",PlanID:"P1",DayNumber:4,ExerciseName:"Deadlift",S1Reps:8,S1Weight:90,S2Reps:6,S2Weight:100,S3Reps:5,S3Weight:110,S4Reps:5,S4Weight:115,S5Reps:5,S5Weight:120,RPE:"",Note:"PR attempt" },
-  { LogID:"d28",Date:"2026-02-23",PlanID:"P1",DayNumber:1,ExerciseName:"Barbell Bench Press",S1Reps:10,S1Weight:70,S2Reps:8,S2Weight:80,S3Reps:6,S3Weight:85,S4Reps:6,S4Weight:85,S5Reps:5,S5Weight:87.5,RPE:9,Note:"New PR!" },
-  { LogID:"d29",Date:"2026-02-23",PlanID:"P1",DayNumber:1,ExerciseName:"Incline DB Bench",S1Reps:12,S1Weight:52,S2Reps:12,S2Weight:52,S3Reps:8,S3Weight:52,RPE:"",Note:"" },
-  { LogID:"d30",Date:"2026-02-23",PlanID:"P1",DayNumber:1,ExerciseName:"Lateral Raises",S1Reps:12,S1Weight:24,S2Reps:11,S2Weight:24,S3Reps:10,S3Weight:24,RPE:"",Note:"" },
-  { LogID:"d31",Date:"2026-02-25",PlanID:"P1",DayNumber:2,ExerciseName:"Back Squat",S1Reps:8,S1Weight:100,S2Reps:8,S2Weight:100,S3Reps:8,S3Weight:100,RPE:8,Note:"All sets at 100!" },
-  { LogID:"d32",Date:"2026-02-26",PlanID:"P1",DayNumber:3,ExerciseName:"Bent-over Row",S1Reps:10,S1Weight:80,S2Reps:8,S2Weight:90,S3Reps:8,S3Weight:90,S4Reps:7,S4Weight:95,S5Reps:5,S5Weight:97.5,RPE:"",Note:"" },
-  { LogID:"d33",Date:"2026-02-27",PlanID:"P1",DayNumber:4,ExerciseName:"Deadlift",S1Reps:8,S1Weight:90,S2Reps:6,S2Weight:100,S3Reps:5,S3Weight:110,S4Reps:5,S4Weight:115,S5Reps:5,S5Weight:120,RPE:9,Note:"" },
+  { LogID:"d01",Date:"2026-01-26",PlanID:"P1",DayNumber:1,ExerciseName:"Barbell Bench Press",S1Reps:8,S1Weight:70,S2Reps:8,S2Weight:80,S3Reps:7,S3Weight:80,S4Reps:6,S4Weight:80,S5Reps:5,S5Weight:85,RPE:"",Note:"",Week:5,Block:1 },
+  { LogID:"d02",Date:"2026-01-26",PlanID:"P1",DayNumber:1,ExerciseName:"Incline DB Bench",S1Reps:12,S1Weight:42,S2Reps:12,S2Weight:42,S3Reps:4,S3Weight:52,RPE:"",Note:"",Week:5,Block:1 },
+  { LogID:"d03",Date:"2026-01-26",PlanID:"P1",DayNumber:1,ExerciseName:"Lateral Raises",S1Reps:13,S1Weight:19,S2Reps:12,S2Weight:19,S3Reps:12,S3Weight:19,RPE:"",Note:"",Week:5,Block:1 },
+  { LogID:"d04",Date:"2026-01-26",PlanID:"P1",DayNumber:1,ExerciseName:"Shoulder Prehab",S1Reps:20,S1Weight:15,S2Reps:18,S2Weight:15,S3Reps:18,S3Weight:15,RPE:"",Note:"",Week:5,Block:1 },
+  { LogID:"d05",Date:"2026-01-27",PlanID:"P1",DayNumber:2,ExerciseName:"Back Squat",S1Reps:6,S1Weight:80,S2Reps:6,S2Weight:90,S3Reps:6,S3Weight:95,S4Reps:5,S4Weight:95,S5Reps:5,S5Weight:97.5,RPE:"",Note:"",Week:5,Block:1 },
+  { LogID:"d06",Date:"2026-01-27",PlanID:"P1",DayNumber:2,ExerciseName:"Romanian Deadlift",S1Reps:8,S1Weight:90,S2Reps:8,S2Weight:90,S3Reps:8,S3Weight:90,RPE:"",Note:"",Week:5,Block:1 },
+  { LogID:"d07",Date:"2026-01-27",PlanID:"P1",DayNumber:2,ExerciseName:"Goblet Squat",S1Reps:15,S1Weight:26,S2Reps:15,S2Weight:26,S3Reps:15,S3Weight:26,RPE:"",Note:"",Week:5,Block:1 },
+  { LogID:"d08",Date:"2026-01-28",PlanID:"P1",DayNumber:3,ExerciseName:"Bent-over Row",S1Reps:8,S1Weight:80,S2Reps:8,S2Weight:85,S3Reps:8,S3Weight:90,S4Reps:8,S4Weight:90,S5Reps:8,S5Weight:90,RPE:"",Note:"",Week:5,Block:1 },
+  { LogID:"d09",Date:"2026-01-28",PlanID:"P1",DayNumber:3,ExerciseName:"Biceps Curls",S1Reps:14,S1Weight:24,S2Reps:15,S2Weight:24,S3Reps:8,S3Weight:24,RPE:"",Note:"",Week:5,Block:1 },
+  { LogID:"d10",Date:"2026-01-29",PlanID:"P1",DayNumber:4,ExerciseName:"Deadlift",S1Reps:8,S1Weight:90,S2Reps:6,S2Weight:100,S3Reps:5,S3Weight:110,S4Reps:5,S4Weight:110,S5Reps:0,S5Weight:110,RPE:"",Note:"",Week:5,Block:1 },
+  { LogID:"d11",Date:"2026-01-29",PlanID:"P1",DayNumber:4,ExerciseName:"Kettlebell Swings",S1Reps:25,S1Weight:16,S2Reps:25,S2Weight:16,S3Reps:25,S3Weight:16,RPE:"",Note:"",Week:5,Block:1 },
+  { LogID:"d12",Date:"2026-02-02",PlanID:"P1",DayNumber:1,ExerciseName:"Barbell Bench Press",S1Reps:8,S1Weight:70,S2Reps:8,S2Weight:77.5,S3Reps:8,S3Weight:80,S4Reps:7,S4Weight:82.5,S5Reps:6,S5Weight:83.5,RPE:8,Note:"",Week:1,Block:2 },
+  { LogID:"d13",Date:"2026-02-02",PlanID:"P1",DayNumber:1,ExerciseName:"Incline DB Bench",S1Reps:10,S1Weight:52,S2Reps:10,S2Weight:52,S3Reps:8,S3Weight:52,RPE:"",Note:"",Week:1,Block:2 },
+  { LogID:"d14",Date:"2026-02-02",PlanID:"P1",DayNumber:1,ExerciseName:"Lateral Raises",S1Reps:10,S1Weight:24,S2Reps:10,S2Weight:24,S3Reps:10,S3Weight:24,RPE:"",Note:"",Week:1,Block:2 },
+  { LogID:"d15",Date:"2026-02-09",PlanID:"P1",DayNumber:1,ExerciseName:"Barbell Bench Press",S1Reps:8,S1Weight:70,S2Reps:8,S2Weight:80,S3Reps:8,S3Weight:80,S4Reps:5,S4Weight:85,S5Reps:6,S5Weight:85,RPE:"",Note:"",Week:2,Block:2 },
+  { LogID:"d16",Date:"2026-02-09",PlanID:"P1",DayNumber:1,ExerciseName:"Incline DB Bench",S1Reps:11,S1Weight:52,S2Reps:9,S2Weight:52,S3Reps:7,S3Weight:52,RPE:"",Note:"",Week:2,Block:2 },
+  { LogID:"d17",Date:"2026-02-10",PlanID:"P1",DayNumber:2,ExerciseName:"Back Squat",S1Reps:6,S1Weight:80,S2Reps:5,S2Weight:90,S3Reps:5,S3Weight:90,S4Reps:5,S4Weight:95,S5Reps:5,S5Weight:95,RPE:"",Note:"",Week:2,Block:2 },
+  { LogID:"d18",Date:"2026-02-10",PlanID:"P1",DayNumber:2,ExerciseName:"Romanian Deadlift",S1Reps:12,S1Weight:90,S2Reps:12,S2Weight:90,S3Reps:8,S3Weight:90,RPE:"",Note:"",Week:2,Block:2 },
+  { LogID:"d19",Date:"2026-02-11",PlanID:"P1",DayNumber:3,ExerciseName:"Bent-over Row",S1Reps:8,S1Weight:80,S2Reps:8,S2Weight:85,S3Reps:8,S3Weight:90,S4Reps:5,S4Weight:95,S5Reps:5,S5Weight:95,RPE:"",Note:"",Week:2,Block:2 },
+  { LogID:"d20",Date:"2026-02-12",PlanID:"P1",DayNumber:4,ExerciseName:"Deadlift",S1Reps:8,S1Weight:95,S2Reps:8,S2Weight:100,S3Reps:6,S3Weight:110,S4Reps:5,S4Weight:115,S5Reps:5,S5Weight:115,RPE:"",Note:"",Week:2,Block:2 },
+  { LogID:"d21",Date:"2026-02-16",PlanID:"P1",DayNumber:1,ExerciseName:"Barbell Bench Press",S1Reps:8,S1Weight:70,S2Reps:8,S2Weight:80,S3Reps:7,S3Weight:82.5,S4Reps:6,S4Weight:85,S5Reps:5,S5Weight:85,RPE:"",Note:"",Week:3,Block:2 },
+  { LogID:"d22",Date:"2026-02-16",PlanID:"P1",DayNumber:1,ExerciseName:"Incline DB Bench",S1Reps:12,S1Weight:52,S2Reps:8,S2Weight:52,S3Reps:12,S3Weight:42,RPE:"",Note:"",Week:3,Block:2 },
+  { LogID:"d23",Date:"2026-02-16",PlanID:"P1",DayNumber:1,ExerciseName:"Lateral Raises",S1Reps:14,S1Weight:25,S2Reps:12,S2Weight:24,S3Reps:12,S3Weight:24,RPE:"",Note:"",Week:3,Block:2 },
+  { LogID:"d24",Date:"2026-02-17",PlanID:"P1",DayNumber:2,ExerciseName:"Back Squat",S1Reps:5,S1Weight:80,S2Reps:5,S2Weight:90,S3Reps:5,S3Weight:95,S4Reps:5,S4Weight:95,S5Reps:5,S5Weight:97.5,RPE:"",Note:"",Week:3,Block:2 },
+  { LogID:"d25",Date:"2026-02-17",PlanID:"P1",DayNumber:2,ExerciseName:"Romanian Deadlift",S1Reps:8,S1Weight:90,S2Reps:8,S2Weight:100,S3Reps:8,S3Weight:100,RPE:"",Note:"",Week:3,Block:2 },
+  { LogID:"d26",Date:"2026-02-18",PlanID:"P1",DayNumber:3,ExerciseName:"Bent-over Row",S1Reps:10,S1Weight:80,S2Reps:8,S2Weight:90,S3Reps:8,S3Weight:90,S4Reps:7,S4Weight:95,S5Reps:5,S5Weight:97.5,RPE:"",Note:"",Week:3,Block:2 },
+  { LogID:"d27",Date:"2026-02-19",PlanID:"P1",DayNumber:4,ExerciseName:"Deadlift",S1Reps:8,S1Weight:90,S2Reps:6,S2Weight:100,S3Reps:5,S3Weight:110,S4Reps:5,S4Weight:115,S5Reps:5,S5Weight:120,RPE:"",Note:"PR attempt",Week:3,Block:2 },
+  { LogID:"d28",Date:"2026-02-23",PlanID:"P1",DayNumber:1,ExerciseName:"Barbell Bench Press",S1Reps:10,S1Weight:70,S2Reps:8,S2Weight:80,S3Reps:6,S3Weight:85,S4Reps:6,S4Weight:85,S5Reps:5,S5Weight:87.5,RPE:9,Note:"New PR!",Week:4,Block:2 },
+  { LogID:"d29",Date:"2026-02-23",PlanID:"P1",DayNumber:1,ExerciseName:"Incline DB Bench",S1Reps:12,S1Weight:52,S2Reps:12,S2Weight:52,S3Reps:8,S3Weight:52,RPE:"",Note:"",Week:4,Block:2 },
+  { LogID:"d30",Date:"2026-02-23",PlanID:"P1",DayNumber:1,ExerciseName:"Lateral Raises",S1Reps:12,S1Weight:24,S2Reps:11,S2Weight:24,S3Reps:10,S3Weight:24,RPE:"",Note:"",Week:4,Block:2 },
+  { LogID:"d31",Date:"2026-02-25",PlanID:"P1",DayNumber:2,ExerciseName:"Back Squat",S1Reps:8,S1Weight:100,S2Reps:8,S2Weight:100,S3Reps:8,S3Weight:100,RPE:8,Note:"All sets at 100!",Week:4,Block:2 },
+  { LogID:"d32",Date:"2026-02-26",PlanID:"P1",DayNumber:3,ExerciseName:"Bent-over Row",S1Reps:10,S1Weight:80,S2Reps:8,S2Weight:90,S3Reps:8,S3Weight:90,S4Reps:7,S4Weight:95,S5Reps:5,S5Weight:97.5,RPE:"",Note:"",Week:4,Block:2 },
+  { LogID:"d33",Date:"2026-02-27",PlanID:"P1",DayNumber:4,ExerciseName:"Deadlift",S1Reps:8,S1Weight:90,S2Reps:6,S2Weight:100,S3Reps:5,S3Weight:110,S4Reps:5,S4Weight:115,S5Reps:5,S5Weight:120,RPE:9,Note:"",Week:4,Block:2 },
 ];
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -179,13 +179,11 @@ function extractSets(log) {
   }
   return sets;
 }
-
 function topWeight(log) {
   let max = 0;
   for (let i = 1; i <= 5; i++) { const w = Number(log["S"+i+"Weight"]) || 0; if (w > max) max = w; }
   return max;
 }
-
 function totalVolume(log) {
   let vol = 0;
   for (let i = 1; i <= 5; i++) {
@@ -194,8 +192,61 @@ function totalVolume(log) {
   return vol;
 }
 
+// Trend classification: compare current session to prior session of same exercise.
+// Returns 'new' | 'green' | 'amber' | 'red'.
+//   green = improved (weight up & vol >=, or weight same & vol up)
+//   amber = trade-off / on par
+//   red   = regression
+function classifyTrend(curr, prev) {
+  if (!prev) return "new";
+  const TOL = 0.015;
+  const wMargin = Math.max(0.5, Math.abs(prev.topWeight) * TOL);
+  const vMargin = Math.max(1, Math.abs(prev.vol) * TOL);
+  const wDelta = curr.topWeight - prev.topWeight;
+  const vDelta = curr.vol - prev.vol;
+  const wUp = wDelta > wMargin, wDown = wDelta < -wMargin, wSame = !wUp && !wDown;
+  const vUp = vDelta > vMargin, vDown = vDelta < -vMargin, vSame = !vUp && !vDown;
+  if (wUp && (vUp || vSame)) return "green";
+  if (wSame && vUp) return "green";
+  if (wUp && vDown) return "amber";
+  if (wDown && vUp) return "amber";
+  if (wSame && vSame) return "amber";
+  return "red";
+}
+
 function Card({ children, style }) {
-  return React.createElement("div", { style: { background:"var(--bg2)",border:"1px solid var(--bg3)",borderRadius:"var(--radius)",padding:14,marginBottom:10,...(style||{}) } }, children);
+  return <div style={{ background:"var(--bg2)",border:"1px solid var(--bg3)",borderRadius:"var(--radius)",padding:14,marginBottom:10,...(style||{}) }}>{children}</div>;
+}
+
+function TrendDot({ trend, curr, prev, size = 10 }) {
+  const colors = { green: "#67f4a8", amber: "#f4a867", red: "#f46767", new: "#5a5851" };
+  const labels = { green: "Improved", amber: "On par / trade-off", red: "Regression", new: "First session" };
+  let title = labels[trend] || "\u2014";
+  if (curr && prev) {
+    const dW = curr.topWeight - prev.topWeight;
+    const dV = curr.vol - prev.vol;
+    const sign = (n) => (n > 0 ? "+"+n : ""+n);
+    title = `${labels[trend]} \u00b7 ${sign(dW.toFixed(1))}kg top \u00b7 ${sign(Math.round(dV))}kg vol vs previous`;
+  }
+  return <span title={title} style={{
+    width: size, height: size, borderRadius: "50%", flexShrink: 0,
+    background: colors[trend] || colors.new,
+    boxShadow: trend === "green" ? "0 0 6px rgba(103,244,168,.5)" : trend === "red" ? "0 0 6px rgba(244,103,103,.5)" : "none",
+    display: "inline-block",
+  }} />;
+}
+
+function WeekControl({ label, value, onChange }) {
+  return (
+    <div style={{display:"flex",alignItems:"center",background:"var(--bg3)",borderRadius:10,overflow:"hidden"}}>
+      <button onClick={() => onChange(Math.max(1, value - 1))} style={{background:"none",border:"none",color:"var(--fg2)",fontSize:15,padding:"4px 9px",cursor:"pointer",lineHeight:1}}>{"\u2212"}</button>
+      <div style={{padding:"2px 4px",textAlign:"center",minWidth:32}}>
+        <div style={{fontSize:8,color:"var(--fg3)",textTransform:"uppercase",letterSpacing:.5}}>{label}</div>
+        <div style={{fontSize:12,fontFamily:"var(--mono)",color:"var(--fg)",fontWeight:700,lineHeight:1.1}}>{value}</div>
+      </div>
+      <button onClick={() => onChange(value + 1)} style={{background:"none",border:"none",color:"var(--fg2)",fontSize:15,padding:"4px 9px",cursor:"pointer",lineHeight:1}}>+</button>
+    </div>
+  );
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -221,12 +272,22 @@ function FitnessTracker() {
   const [loading, setLoading] = useState(false);
   const [editingPlan, setEditingPlan] = useState(false);
   const [savingPlan, setSavingPlan] = useState(false);
-  const [showAddEx, setShowAddEx] = useState(null); // dayNumber or null
+  const [showAddEx, setShowAddEx] = useState(null);
   const [newExForm, setNewExForm] = useState({name:"",muscle:"Chest",equipment:"",cue:"",sets:3,reps:"8-12 reps",rule:""});
-  const [addExMode, setAddExMode] = useState("library"); // "library" or "new"
+  const [addExMode, setAddExMode] = useState("library");
   const [planName, setPlanName] = useState("");
   const [allPlans, setAllPlans] = useState([DEMO_PLAN]);
   const [allPlanExercises, setAllPlanExercises] = useState(DEMO_PLAN_EXERCISES);
+
+  // NEW: Week + Block tracking (persisted)
+  const [currentWeek, setCurrentWeek] = useState(() => Number(LS.get("currentWeek","1")) || 1);
+  const [currentBlock, setCurrentBlock] = useState(() => Number(LS.get("currentBlock","1")) || 1);
+  useEffect(() => { LS.set("currentWeek", String(currentWeek)); }, [currentWeek]);
+  useEffect(() => { LS.set("currentBlock", String(currentBlock)); }, [currentBlock]);
+
+  // NEW: History week-strip selection + scroll ref
+  const [calSelectedWeek, setCalSelectedWeek] = useState(null);
+  const calScrollRef = useRef(null);
 
   useEffect(() => {
     const dow = new Date().getDay();
@@ -240,6 +301,15 @@ function FitnessTracker() {
       syncFromApi(apiUrl, apiKey);
     }
   }, []);
+
+  // Auto-scroll the History week-strip to the end whenever History opens
+  useEffect(() => {
+    if (view === "history" && calScrollRef.current) {
+      setTimeout(() => {
+        if (calScrollRef.current) calScrollRef.current.scrollLeft = calScrollRef.current.scrollWidth;
+      }, 50);
+    }
+  }, [view]);
 
   const showToast = useCallback((msg, dur = 2200) => {
     setToast(msg); setTimeout(() => setToast(null), dur);
@@ -264,8 +334,10 @@ function FitnessTracker() {
       if (hist && hist.ok && hist.sessions) {
         const flatLogs = [];
         hist.sessions.forEach(s => {
+          const wk = Number(s.week) || 1;
+          const bl = Number(s.block) || 1;
           s.entries.forEach(e => {
-            const log = { LogID: uid(), Date: s.date, PlanID: s.planId, DayNumber: s.dayNumber, ExerciseName: e.exerciseName, RPE: e.rpe, Note: e.note };
+            const log = { LogID: uid(), Date: s.date, PlanID: s.planId, DayNumber: s.dayNumber, ExerciseName: e.exerciseName, RPE: e.rpe, Note: e.note, Week: wk, Block: bl };
             e.sets.forEach((set, i) => { log["S"+(i+1)+"Reps"] = set.reps; log["S"+(i+1)+"Weight"] = set.weight; });
             flatLogs.push(log);
           });
@@ -279,6 +351,7 @@ function FitnessTracker() {
   }, [showToast]);
 
   const exMap = useMemo(() => { const m = {}; exercises.forEach(e => { m[e.ExerciseName] = e; }); return m; }, [exercises]);
+
   const days = useMemo(() => {
     const d = {};
     planExercises.forEach(pe => {
@@ -288,6 +361,7 @@ function FitnessTracker() {
     Object.values(d).forEach(day => day.exercises.sort((a, b) => a.SortOrder - b.SortOrder));
     return d;
   }, [planExercises]);
+
   const dayList = useMemo(() => Object.values(days).sort((a, b) => a.num - b.num), [days]);
   const activeDay = days[activeDayNum] || dayList[0];
 
@@ -303,7 +377,7 @@ function FitnessTracker() {
     activeDay.exercises.forEach(pe => {
       const draft = logDraft[pe.ExerciseName];
       if (!draft || !draft.some(s => s && (s.reps || s.weight))) return;
-      const entry = { LogID: uid(), Date: todayStr(), PlanID: activePlan.PlanID, DayNumber: activeDayNum, ExerciseName: pe.ExerciseName, RPE: "", Note: logNote };
+      const entry = { LogID: uid(), Date: todayStr(), PlanID: activePlan.PlanID, DayNumber: activeDayNum, ExerciseName: pe.ExerciseName, RPE: "", Note: logNote, Week: currentWeek, Block: currentBlock };
       draft.forEach((s, i) => { if (s) { entry["S"+(i+1)+"Reps"] = Number(s.reps) || 0; entry["S"+(i+1)+"Weight"] = Number(s.weight) || 0; } });
       entries.push(entry);
     });
@@ -313,14 +387,14 @@ function FitnessTracker() {
     const saved = {}; entries.forEach(e => { saved[e.ExerciseName] = true; }); setLogSaved(saved);
     if (api.connected) {
       try {
-        const apiEntries = entries.map(e => ({ date: e.Date, planId: e.PlanID, dayNumber: e.DayNumber, exerciseName: e.ExerciseName, sets: extractSets(e), rpe: e.RPE, note: e.Note }));
+        const apiEntries = entries.map(e => ({ date: e.Date, planId: e.PlanID, dayNumber: e.DayNumber, exerciseName: e.ExerciseName, sets: extractSets(e), rpe: e.RPE, note: e.Note, week: e.Week, block: e.Block }));
         await api.post("saveWorkout", { entries: apiEntries });
         showToast("Saved " + entries.length + " exercises \u2192 Sheet");
       } catch (err) { showToast("Saved locally (Sheet sync failed)", 3000); }
     } else { showToast("Saved " + entries.length + " exercises (demo mode)"); }
     setLogDraft({}); setLogNote(""); setSaving(false);
     setTimeout(() => setLogSaved({}), 3000);
-  }, [activeDay, logDraft, logNote, activePlan, activeDayNum, showToast]);
+  }, [activeDay, logDraft, logNote, activePlan, activeDayNum, currentWeek, currentBlock, showToast]);
 
   const handleSetChange = (exName, setIdx, field, val) => {
     setLogDraft(prev => {
@@ -334,6 +408,117 @@ function FitnessTracker() {
   const progressData = useMemo(() => {
     return logs.filter(l => l.ExerciseName === progressEx).sort((a, b) => a.Date.localeCompare(b.Date)).map(l => ({ date: fmtDate(l.Date), fullDate: l.Date, topWeight: topWeight(l), totalVol: totalVolume(l) }));
   }, [logs, progressEx]);
+
+  // ── History: calendar weeks grouped by (block, week) ──
+  const calendarWeeks = useMemo(() => {
+    const byWeek = {};
+    logs.forEach(l => {
+      const week = Number(l.Week) || 1;
+      const block = Number(l.Block) || 1;
+      const key = block + "-" + week;
+      if (!byWeek[key]) byWeek[key] = { week, block, planId: l.PlanID, days: new Set(), dates: new Set(), exercises: 0, totalVol: 0, notes: [] };
+      byWeek[key].days.add(l.DayNumber);
+      byWeek[key].dates.add(l.Date);
+      byWeek[key].exercises++;
+      byWeek[key].totalVol += totalVolume(l);
+      if (l.Note) byWeek[key].notes.push(l.Note);
+    });
+    return Object.values(byWeek)
+      .map(w => ({ ...w, days: [...w.days], dates: [...w.dates].sort(), notes: [...new Set(w.notes)] }))
+      .sort((a, b) => a.block === b.block ? a.week - b.week : a.block - b.block);
+  }, [logs]);
+
+  // ── History: detail for the currently-selected week, with trend classification ──
+  const weekDetail = useMemo(() => {
+    if (calSelectedWeek === null) return null;
+    const sel = calendarWeeks[calSelectedWeek];
+    if (!sel) return null;
+    const weekLogs = logs.filter(l => (Number(l.Week)||1) === sel.week && (Number(l.Block)||1) === sel.block);
+    const sortedLogs = [...logs].sort((a, b) => a.Date.localeCompare(b.Date));
+    const prevByExercise = (exerciseName, date) => {
+      const priors = sortedLogs.filter(l => l.ExerciseName === exerciseName && l.Date < date);
+      if (!priors.length) return null;
+      const p = priors[priors.length - 1];
+      return { topWeight: topWeight(p), vol: totalVolume(p) };
+    };
+    const byDay = {};
+    weekLogs.forEach(l => {
+      if (!byDay[l.DayNumber]) byDay[l.DayNumber] = { dayNumber: l.DayNumber, date: l.Date, entries: [] };
+      const ex = exMap[l.ExerciseName];
+      const curr = { topWeight: topWeight(l), vol: totalVolume(l) };
+      const prev = prevByExercise(l.ExerciseName, l.Date);
+      const trend = classifyTrend(curr, prev);
+      byDay[l.DayNumber].entries.push({
+        name: l.ExerciseName,
+        muscle: ex ? ex.MuscleGroup : "",
+        topWeight: curr.topWeight,
+        vol: curr.vol,
+        sets: extractSets(l),
+        note: l.Note,
+        trend, prev,
+      });
+    });
+    return { ...sel, dayDetails: Object.values(byDay).sort((a,b) => a.date.localeCompare(b.date)) };
+  }, [calSelectedWeek, calendarWeeks, logs, exMap]);
+
+  const handleTapWeek = (idx) => setCalSelectedWeek(calSelectedWeek === idx ? null : idx);
+
+  // ── Whoop AI summary ──
+  const buildWhoopString = (detail) => {
+    if (!detail) return "";
+    const planTitle = activePlan ? activePlan.PlanName : "Training plan";
+    const dates = detail.dates;
+    const rangeStr = dates.length > 1 ? (dates[0] + " to " + dates[dates.length - 1]) : dates[0];
+    const lines = [];
+    lines.push("Strength training week \u2014 Block " + detail.block + " \u00b7 Week " + detail.week + " (" + rangeStr + ")");
+    lines.push("Plan: " + planTitle);
+    lines.push("");
+    detail.dayDetails.forEach(dd => {
+      const dayInfo = days[dd.dayNumber];
+      const dayLabel = dayInfo ? dayInfo.label : ("D" + dd.dayNumber);
+      const dayName = dayInfo ? dayInfo.name : "";
+      lines.push(dayLabel + " (" + dd.date + ") \u2014 " + dayName);
+      dd.entries.forEach(en => {
+        const setsStr = en.sets.map(s => s.reps + "\u00d7" + s.weight + "kg").join(", ");
+        const top = en.topWeight > 0 ? (" \u00b7 top " + en.topWeight + "kg") : "";
+        lines.push(" \u2022 " + en.name + ": " + setsStr + top);
+      });
+      const dayNotes = dd.entries.filter(e => e.note).map(e => e.note);
+      if (dayNotes.length) lines.push(" note: " + [...new Set(dayNotes)].join(" \u00b7 "));
+      lines.push("");
+    });
+    const totalVolKg = Math.round(detail.totalVol);
+    lines.push("Totals: " + detail.days.length + " sessions \u00b7 " + detail.exercises + " exercises \u00b7 " + totalVolKg + "kg total volume");
+    lines.push("RPE & recovery context: please integrate with today's Whoop strain/recovery to recommend adjustments.");
+    return lines.join("\n");
+  };
+
+  const copyWhoopSummary = async () => {
+    if (!weekDetail) return;
+    const s = buildWhoopString(weekDetail);
+    try {
+      await navigator.clipboard.writeText(s);
+      showToast("Whoop summary copied to clipboard");
+    } catch {
+      const ta = document.createElement("textarea");
+      ta.value = s; document.body.appendChild(ta); ta.select();
+      try { document.execCommand("copy"); showToast("Whoop summary copied"); }
+      catch { showToast("Copy failed \u2014 clipboard unavailable"); }
+      document.body.removeChild(ta);
+    }
+  };
+
+  // ── Progress: weekly volume by muscle (current Week+Block) ──
+  const volumeByMuscle = useMemo(() => {
+    const weekLogs = logs.filter(l => (Number(l.Week)||1) === currentWeek && (Number(l.Block)||1) === currentBlock);
+    const vol = {};
+    weekLogs.forEach(l => {
+      const ex = exMap[l.ExerciseName];
+      if (!ex) return;
+      vol[ex.MuscleGroup] = (vol[ex.MuscleGroup] || 0) + totalVolume(l);
+    });
+    return Object.entries(vol).map(([muscle, volume]) => ({ muscle, volume: Math.round(volume) })).sort((a,b) => b.volume - a.volume);
+  }, [logs, currentWeek, currentBlock, exMap]);
 
   const history = useMemo(() => {
     const byDate = {};
@@ -405,7 +590,6 @@ function FitnessTracker() {
       sortOrder: pe.SortOrder, exerciseName: pe.ExerciseName,
       targetSets: pe.TargetSets, targetReps: pe.TargetReps, progressionRule: pe.ProgressionRule,
     }));
-
     if (api.connected) {
       try {
         const res = await api.post("createPlan", { name, exercises: exList });
@@ -448,7 +632,6 @@ function FitnessTracker() {
 
   const activatePlanOnSheet = useCallback(async (planId) => {
     switchToPlan(planId);
-    // Update allPlans locally
     setAllPlans(prev => prev.map(p => ({...p, IsActive: p.PlanID === planId ? "TRUE" : "FALSE"})));
     if (api.connected) {
       try {
@@ -462,38 +645,44 @@ function FitnessTracker() {
 
   // ═══ RENDER ═══
   const css = `
-    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,700;1,9..40,400&family=Space+Mono:wght@400;700&display=swap');
-    *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-    :root{--bg:#0a0a0e;--bg2:#131318;--bg3:#1c1c24;--bg4:#262630;--fg:#ece9e3;--fg2:#9a9790;--fg3:#5a5850;--accent:#c5f467;--accent2:#a8d84e;--red:#f46767;--orange:#f4a867;--green:#67f4a8;--blue:#67a8f4;--radius:14px;--mono:'Space Mono',monospace;--sans:'DM Sans',sans-serif}
-    body{background:var(--bg);color:var(--fg);font-family:var(--sans)}
-    input,select,textarea,button{font-family:inherit}
-    ::-webkit-scrollbar{width:4px;height:4px}::-webkit-scrollbar-thumb{background:var(--bg4);border-radius:2px}
-    @keyframes fadeIn{from{opacity:0;transform:translateX(-50%) translateY(-8px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
-    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
-    @keyframes slideUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-    input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
-    input[type=number]{-moz-appearance:textfield}
-  `;
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,700;1,9..40,400&family=Space+Mono:wght@400;700&display=swap');
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{--bg:#0a0a0e;--bg2:#131318;--bg3:#1c1c24;--bg4:#262630;--fg:#ece9e3;--fg2:#9a9790;--fg3:#5a5850;--accent:#c5f467;--accent2:#a8d84e;--red:#f46767;--orange:#f4a867;--green:#67f4a8;--blue:#67a8f4;--radius:14px;--mono:'Space Mono',monospace;--sans:'DM Sans',sans-serif}
+body{background:var(--bg);color:var(--fg);font-family:var(--sans)}
+input,select,textarea,button{font-family:inherit}
+::-webkit-scrollbar{width:4px;height:4px}::-webkit-scrollbar-thumb{background:var(--bg4);border-radius:2px}
+@keyframes fadeIn{from{opacity:0;transform:translateX(-50%) translateY(-8px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+@keyframes slideUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeSlide{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pulseRing{0%,100%{box-shadow:0 0 0 0 rgba(197,244,103,.45)}50%{box-shadow:0 0 0 6px rgba(197,244,103,0)}}
+input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+input[type=number]{-moz-appearance:textfield}
+`;
 
   return (<>
     <style>{css}</style>
     <div style={{minHeight:"100vh",background:"var(--bg)",color:"var(--fg)",fontFamily:"var(--sans)",position:"relative",maxWidth:480,margin:"0 auto"}}>
-
       {toast && <div style={{position:"fixed",top:16,left:"50%",transform:"translateX(-50%)",zIndex:999,background:"var(--accent)",color:"#0a0a0e",padding:"10px 24px",borderRadius:40,fontWeight:700,fontSize:13,animation:"fadeIn .2s",boxShadow:"0 8px 32px rgba(197,244,103,.3)",whiteSpace:"nowrap"}}>{toast}</div>}
 
       <header style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"14px 16px",borderBottom:"1px solid var(--bg3)",background:"linear-gradient(180deg,var(--bg2) 0%,var(--bg) 100%)",position:"sticky",top:0,zIndex:90}}>
-        <div style={{display:"flex",alignItems:"center",gap:10}}>
-          <div style={{width:34,height:34,borderRadius:9,background:"linear-gradient(135deg,var(--accent) 0%,#8bc34a 100%)",display:"grid",placeItems:"center",fontWeight:700,color:"#0a0a0e",fontSize:17,fontFamily:"var(--mono)"}}>W</div>
-          <div>
+        <div style={{display:"flex",alignItems:"center",gap:10,minWidth:0,flex:1}}>
+          <div style={{width:34,height:34,borderRadius:9,background:"linear-gradient(135deg,var(--accent) 0%,#8bc34a 100%)",display:"grid",placeItems:"center",fontWeight:700,color:"#0a0a0e",fontSize:17,fontFamily:"var(--mono)",flexShrink:0}}>W</div>
+          <div style={{minWidth:0}}>
             <div style={{fontWeight:700,fontSize:15,letterSpacing:"-0.02em"}}>Workout Tracker</div>
-            <div style={{fontSize:11,color:"var(--fg3)",fontFamily:"var(--mono)",display:"flex",alignItems:"center",gap:6}}>
-              {activePlan ? activePlan.PlanName : "No plan"}
-              <span style={{display:"inline-block",width:6,height:6,borderRadius:"50%",background:synced?"var(--green)":"var(--orange)"}} />
+            <div style={{fontSize:11,color:"var(--fg3)",fontFamily:"var(--mono)",display:"flex",alignItems:"center",gap:6,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>
+              <span style={{overflow:"hidden",textOverflow:"ellipsis"}}>{activePlan ? activePlan.PlanName : "No plan"}</span>
+              <span style={{display:"inline-block",width:6,height:6,borderRadius:"50%",background:synced?"var(--green)":"var(--orange)",flexShrink:0}} />
             </div>
           </div>
         </div>
-        {loading && <div style={{fontSize:11,color:"var(--accent)",fontFamily:"var(--mono)",animation:"pulse 1s infinite"}}>syncing...</div>}
+        <div style={{display:"flex",gap:4,flexShrink:0}}>
+          <WeekControl label="Blk" value={currentBlock} onChange={setCurrentBlock} />
+          <WeekControl label="Wk" value={currentWeek} onChange={setCurrentWeek} />
+        </div>
       </header>
+
+      {loading && <div style={{padding:"4px 16px",fontSize:11,color:"var(--accent)",fontFamily:"var(--mono)",animation:"pulse 1s infinite",textAlign:"right"}}>syncing...</div>}
 
       <nav style={{display:"flex",gap:2,padding:"8px 12px",background:"var(--bg)",borderBottom:"1px solid var(--bg3)",position:"sticky",top:63,zIndex:89,overflowX:"auto"}}>
         {[{id:"log",icon:"\ud83c\udfcb\ufe0f",label:"Log"},{id:"progress",icon:"\ud83d\udcc8",label:"Progress"},{id:"history",icon:"\ud83d\udcc5",label:"History"},{id:"plans",icon:"\ud83d\udccb",label:"Plan"},{id:"settings",icon:"\u2699\ufe0f",label:"Setup"}].map(t => (
@@ -505,7 +694,7 @@ function FitnessTracker() {
 
       <main style={{padding:"12px 14px 100px"}}>
 
-        {/* LOG */}
+        {/* ─── LOG ─── */}
         {view === "log" && activeDay && (
           <div style={{animation:"slideUp .2s ease"}}>
             <div style={{display:"flex",gap:5,marginBottom:14,overflowX:"auto",paddingBottom:4}}>
@@ -557,11 +746,11 @@ function FitnessTracker() {
               );
             })}
             <Card><textarea value={logNote} onChange={e => setLogNote(e.target.value)} placeholder="Session notes..." style={{width:"100%",background:"var(--bg3)",border:"1px solid var(--bg4)",borderRadius:8,padding:10,color:"var(--fg)",fontSize:13,resize:"vertical",minHeight:44,outline:"none"}} /></Card>
-            <button onClick={saveWorkout} disabled={saving} style={{width:"100%",padding:15,borderRadius:"var(--radius)",border:"none",background:saving?"var(--bg4)":"linear-gradient(135deg,var(--accent) 0%,#8bc34a 100%)",color:"#0a0a0e",fontWeight:700,fontSize:15,cursor:saving?"wait":"pointer",boxShadow:saving?"none":"0 4px 20px rgba(197,244,103,.25)",transition:"all .2s"}}>{saving ? "Saving..." : "Save Workout"}</button>
+            <button onClick={saveWorkout} disabled={saving} style={{width:"100%",padding:15,borderRadius:"var(--radius)",border:"none",background:saving?"var(--bg4)":"linear-gradient(135deg,var(--accent) 0%,#8bc34a 100%)",color:"#0a0a0e",fontWeight:700,fontSize:15,cursor:saving?"wait":"pointer",boxShadow:saving?"none":"0 4px 20px rgba(197,244,103,.25)",transition:"all .2s"}}>{saving ? "Saving..." : `Save Workout \u00b7 Blk ${currentBlock} Wk ${currentWeek}`}</button>
           </div>
         )}
 
-        {/* PROGRESS */}
+        {/* ─── PROGRESS ─── */}
         {view === "progress" && (
           <div style={{animation:"slideUp .2s ease"}}>
             <Card>
@@ -605,42 +794,203 @@ function FitnessTracker() {
                 )}
               </div>
             </>) : <Card style={{textAlign:"center",padding:40}}><div style={{fontSize:32,marginBottom:8}}>{"\ud83d\udcca"}</div><div style={{color:"var(--fg2)",fontSize:13}}>No data yet for this exercise</div></Card>}
+
+            {/* Weekly volume by muscle */}
+            <Card>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:12}}>
+                <div style={{fontSize:12,color:"var(--fg2)",fontWeight:600}}>Weekly Volume by Muscle</div>
+                <div style={{fontSize:10,color:"var(--fg3)",fontFamily:"var(--mono)"}}>Blk {currentBlock} \u00b7 Wk {currentWeek}</div>
+              </div>
+              {volumeByMuscle.length > 0 ? (
+                <ResponsiveContainer width="100%" height={Math.max(160, volumeByMuscle.length * 30)}>
+                  <BarChart data={volumeByMuscle} layout="vertical" margin={{left: 10, right: 10, top: 5, bottom: 5}}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#262630" horizontal={false}/>
+                    <XAxis type="number" tick={{fill:"#5a5850",fontSize:10,fontFamily:"Space Mono"}} />
+                    <YAxis type="category" dataKey="muscle" tick={{fill:"#9a9790",fontSize:11,fontFamily:"DM Sans"}} width={85} />
+                    <Tooltip contentStyle={{background:"#131318",border:"1px solid #262630",borderRadius:8,fontSize:12,fontFamily:"Space Mono"}} cursor={{fill:"rgba(197,244,103,.05)"}} />
+                    <Bar dataKey="volume" radius={[0,4,4,0]}>
+                      {volumeByMuscle.map((entry, i) => (
+                        <Bar key={i} fill={MUSCLE_COLORS[entry.muscle] || "#67a8f4"} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div style={{textAlign:"center",padding:24,color:"var(--fg3)",fontSize:12}}>No volume logged in this week yet</div>
+              )}
+            </Card>
           </div>
         )}
 
-        {/* HISTORY */}
+        {/* ─── HISTORY ─── */}
         {view === "history" && (
           <div style={{animation:"slideUp .2s ease"}}>
-            <div style={{fontSize:10,color:"var(--fg3)",fontWeight:700,marginBottom:10,textTransform:"uppercase",letterSpacing:1}}>Recent Sessions ({history.length})</div>
-            {history.map((session, si) => {
-              const dayInfo = days[session.dayNumber];
-              return <Card key={si} style={{marginBottom:8}}>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-                  <div style={{display:"flex",alignItems:"center",gap:8}}>
-                    <span style={{fontSize:12,fontWeight:700,color:"var(--accent)",fontFamily:"var(--mono)"}}>{dayInfo ? dayInfo.label : "?"}</span>
-                    <span style={{fontSize:13,fontWeight:600}}>{dayInfo ? dayInfo.name : ""}</span>
+            <div style={{background:"var(--bg2)",border:"1px solid var(--bg3)",borderRadius:"var(--radius)",overflow:"hidden",marginBottom:10}}>
+              {/* Scrollable week strip */}
+              <div ref={calScrollRef} style={{overflowX:"auto",padding:"10px",display:"flex",gap:6,whiteSpace:"nowrap"}}>
+                {calendarWeeks.map((w, idx) => {
+                  const isSelected = calSelectedWeek === idx;
+                  const isCurrent = w.week === currentWeek && w.block === currentBlock;
+                  const blockColor = BLOCK_COLORS[(w.block - 1) % BLOCK_COLORS.length];
+                  const uniqueDays = w.days.length;
+                  return (
+                    <button key={idx} onClick={() => handleTapWeek(idx)} style={{
+                      flex:"0 0 auto",minWidth:74,padding:"8px 10px",borderRadius:10,
+                      background: isSelected ? "var(--bg4)" : "var(--bg)",
+                      border: isCurrent ? "2px solid var(--accent)" : isSelected ? ("2px solid " + blockColor) : "1px solid var(--bg3)",
+                      cursor:"pointer",textAlign:"center",transition:"all .15s",position:"relative",
+                      animation: isCurrent && !isSelected ? "pulseRing 2s infinite" : "none",
+                    }}>
+                      <div style={{display:"flex",alignItems:"center",gap:4,marginBottom:2,justifyContent:"center"}}>
+                        <div style={{width:6,height:6,borderRadius:2,background:blockColor}} />
+                        <span style={{fontSize:9,color:"var(--fg3)",fontFamily:"var(--mono)",textTransform:"uppercase",letterSpacing:.5}}>B{w.block}</span>
+                      </div>
+                      <div style={{fontSize:17,fontWeight:700,color:isSelected?"var(--accent)":"var(--fg)",fontFamily:"var(--mono)",lineHeight:1}}>W{w.week}</div>
+                      <div style={{display:"flex",gap:3,marginTop:6,justifyContent:"center"}}>
+                        {Array.from({length: Math.max(1, uniqueDays)}).map((_, di) => (
+                          <div key={di} style={{width:6,height:6,borderRadius:"50%",background: di < uniqueDays ? blockColor : "var(--bg4)"}} />
+                        ))}
+                      </div>
+                      <div style={{fontSize:8,color:"var(--fg3)",marginTop:4,fontFamily:"var(--mono)"}}>{uniqueDays}d \u00b7 {w.exercises}ex</div>
+                    </button>
+                  );
+                })}
+                {!calendarWeeks.some(w => w.week === currentWeek && w.block === currentBlock) && (
+                  <div style={{flex:"0 0 auto",minWidth:74,padding:"8px 10px",borderRadius:10,background:"var(--bg)",border:"2px dashed var(--accent)",textAlign:"center",animation:"pulseRing 2s infinite"}}>
+                    <div style={{fontSize:9,color:"var(--fg3)",fontFamily:"var(--mono)",marginBottom:2}}>B{currentBlock}</div>
+                    <div style={{fontSize:17,fontWeight:700,color:"var(--accent)",fontFamily:"var(--mono)",lineHeight:1}}>W{currentWeek}</div>
+                    <div style={{fontSize:9,color:"var(--fg3)",marginTop:6,fontFamily:"var(--mono)"}}>now</div>
                   </div>
-                  <span style={{fontSize:11,color:"var(--fg3)",fontFamily:"var(--mono)"}}>{fmtDate(session.date)}</span>
+                )}
+                {calendarWeeks.length === 0 && (
+                  <div style={{padding:"14px 10px",color:"var(--fg3)",fontSize:12,fontStyle:"italic"}}>No logged weeks yet</div>
+                )}
+              </div>
+
+              {/* Expanded week detail */}
+              {weekDetail && (
+                <div style={{padding:"10px",animation:"fadeSlide .2s ease"}}>
+                  <div style={{background:"var(--bg)",border:"1px solid var(--bg3)",borderRadius:"var(--radius)",overflow:"hidden"}}>
+                    {/* Header */}
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 14px",borderBottom:"1px solid var(--bg3)"}}>
+                      <div>
+                        <span style={{fontWeight:700,fontSize:14}}>Block {weekDetail.block} \u00b7 Week {weekDetail.week}</span>
+                        <span style={{fontSize:11,color:"var(--fg3)",marginLeft:10,fontFamily:"var(--mono)"}}>{weekDetail.dates.length > 1 ? (weekDetail.dates[0] + " \u2192 " + weekDetail.dates[weekDetail.dates.length-1]) : weekDetail.dates[0]}</span>
+                      </div>
+                      <button onClick={() => setCalSelectedWeek(null)} title="Close" style={{background:"none",border:"none",color:"var(--fg3)",fontSize:16,cursor:"pointer",padding:"2px 6px",lineHeight:1}}>{"\u2715"}</button>
+                    </div>
+
+                    {/* Stats */}
+                    <div style={{display:"flex",borderBottom:"1px solid var(--bg3)"}}>
+                      {[
+                        { label:"Days", val:weekDetail.days.length, color:"var(--accent)" },
+                        { label:"Exercises", val:weekDetail.exercises, color:"var(--blue)" },
+                        { label:"Volume", val:(weekDetail.totalVol/1000).toFixed(1)+"t", color:"var(--green)" },
+                      ].map((s, i) => (
+                        <div key={i} style={{flex:1,textAlign:"center",padding:"10px 6px",borderRight: i<2?"1px solid var(--bg3)":"none"}}>
+                          <div style={{fontSize:9,color:"var(--fg3)",textTransform:"uppercase",letterSpacing:1}}>{s.label}</div>
+                          <div style={{fontSize:16,fontWeight:700,color:s.color,fontFamily:"var(--mono)",marginTop:2}}>{s.val}</div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Whoop copy action */}
+                    <div style={{padding:"10px 12px",borderBottom:"1px solid var(--bg3)"}}>
+                      <button onClick={copyWhoopSummary} style={{
+                        width:"100%",padding:"11px 12px",borderRadius:8,border:"1px solid var(--blue)",
+                        background:"rgba(103,168,244,.1)",color:"var(--blue)",cursor:"pointer",
+                        fontWeight:700,fontSize:12,display:"flex",alignItems:"center",justifyContent:"center",gap:8
+                      }}>
+                        <span style={{fontSize:14}}>{"\ud83d\udccb"}</span> Copy for Whoop AI
+                      </button>
+                    </div>
+
+                    {/* Traffic-light legend */}
+                    <div style={{display:"flex",gap:14,padding:"8px 14px",fontSize:9,color:"var(--fg3)",textTransform:"uppercase",letterSpacing:.5,flexWrap:"wrap",alignItems:"center",borderBottom:"1px solid var(--bg3)"}}>
+                      <span style={{display:"flex",alignItems:"center",gap:4}}><TrendDot trend="green" size={7} /> improved</span>
+                      <span style={{display:"flex",alignItems:"center",gap:4}}><TrendDot trend="amber" size={7} /> par</span>
+                      <span style={{display:"flex",alignItems:"center",gap:4}}><TrendDot trend="red" size={7} /> regression</span>
+                      <span style={{display:"flex",alignItems:"center",gap:4}}><TrendDot trend="new" size={7} /> first</span>
+                    </div>
+
+                    {/* Day breakdown */}
+                    <div style={{padding:"8px 12px"}}>
+                      {weekDetail.dayDetails.map((dd, di) => {
+                        const dayInfo = days[dd.dayNumber];
+                        return (
+                          <div key={di} style={{padding:"8px 0",borderBottom: di < weekDetail.dayDetails.length - 1 ? "1px solid var(--bg3)" : "none"}}>
+                            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
+                              <span style={{fontSize:10,fontWeight:700,color:"var(--accent)",fontFamily:"var(--mono)",minWidth:26}}>{dayInfo ? dayInfo.label : ("D"+dd.dayNumber)}</span>
+                              <span style={{fontSize:12,fontWeight:600}}>{dayInfo ? dayInfo.name : ""}</span>
+                              <span style={{fontSize:10,color:"var(--fg3)",marginLeft:"auto",fontFamily:"var(--mono)"}}>{fmtDate(dd.date)}</span>
+                            </div>
+                            <div style={{paddingLeft:34,display:"flex",flexDirection:"column",gap:4}}>
+                              {dd.entries.map((en, ei) => {
+                                const setsStr = en.sets.map(s => (s.weight > 0 || s.reps > 0) ? (s.reps + "\u00d7" + s.weight + "kg") : "").filter(Boolean).join(" \u00b7 ");
+                                return (
+                                  <div key={ei} style={{background:"var(--bg2)",borderRadius:6,padding:"6px 8px"}}>
+                                    <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
+                                      <span style={{width:6,height:6,borderRadius:"50%",background: MUSCLE_COLORS[en.muscle] || "var(--fg3)",flexShrink:0}} />
+                                      <span style={{fontSize:12,color:"var(--fg)",fontWeight:500,flex:1,minWidth:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{en.name}</span>
+                                      {en.topWeight > 0 && (
+                                        <span style={{fontSize:10,color:"var(--accent)",fontFamily:"var(--mono)",fontWeight:700}}>{en.topWeight}kg</span>
+                                      )}
+                                      <TrendDot trend={en.trend} curr={en} prev={en.prev} size={9} />
+                                    </div>
+                                    {setsStr && <div style={{fontSize:10,color:"var(--fg3)",fontFamily:"var(--mono)",marginTop:3,marginLeft:12}}>{setsStr}{en.note && <span style={{color:"var(--orange)",fontStyle:"italic",marginLeft:8}}>{"\u2014 " + en.note}</span>}</div>}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
                 </div>
-                {session.entries.map((en, ei) => (
-                  <div key={ei} style={{display:"flex",alignItems:"center",gap:6,padding:"5px 0",borderTop:ei>0?"1px solid var(--bg3)":"none"}}>
-                    <span style={{width:6,height:6,borderRadius:"50%",background:MUSCLE_COLORS[en.muscle]||"var(--fg3)",flexShrink:0}} />
-                    <span style={{fontSize:12,fontWeight:500,flex:1,minWidth:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{en.name}</span>
-                    <span style={{fontSize:11,color:"var(--fg2)",fontFamily:"var(--mono)",flexShrink:0}}>{en.topWeight > 0 ? en.topWeight+"kg" : "BW"}</span>
-                    <span style={{fontSize:10,color:"var(--fg3)",fontFamily:"var(--mono)",flexShrink:0}}>{en.sets.length}s</span>
+              )}
+
+              {/* Empty state when no week selected */}
+              {!weekDetail && calendarWeeks.length > 0 && (
+                <div style={{padding:"14px 14px 16px",textAlign:"center",color:"var(--fg3)",fontSize:12,borderTop:"1px solid var(--bg3)"}}>
+                  Tap a week above to see details
+                </div>
+              )}
+            </div>
+
+            {/* Flat recent sessions list (baseline feature, preserved below the strip) */}
+            {history.length > 0 && (<>
+              <div style={{fontSize:10,color:"var(--fg3)",fontWeight:700,margin:"14px 0 8px",textTransform:"uppercase",letterSpacing:1}}>Recent Sessions ({history.length})</div>
+              {history.slice(0, 12).map((session, si) => {
+                const dayInfo = days[session.dayNumber];
+                return <Card key={si} style={{marginBottom:8}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+                    <div style={{display:"flex",alignItems:"center",gap:8}}>
+                      <span style={{fontSize:12,fontWeight:700,color:"var(--accent)",fontFamily:"var(--mono)"}}>{dayInfo ? dayInfo.label : "?"}</span>
+                      <span style={{fontSize:13,fontWeight:600}}>{dayInfo ? dayInfo.name : ""}</span>
+                    </div>
+                    <span style={{fontSize:11,color:"var(--fg3)",fontFamily:"var(--mono)"}}>{fmtDate(session.date)}</span>
                   </div>
-                ))}
-                {session.entries.some(en => en.note) && <div style={{fontSize:10,color:"var(--orange)",marginTop:4,fontStyle:"italic"}}>{session.entries.filter(en => en.note).map(en => en.note).join(" \u00b7 ")}</div>}
-              </Card>;
-            })}
+                  {session.entries.map((en, ei) => (
+                    <div key={ei} style={{display:"flex",alignItems:"center",gap:6,padding:"5px 0",borderTop:ei>0?"1px solid var(--bg3)":"none"}}>
+                      <span style={{width:6,height:6,borderRadius:"50%",background:MUSCLE_COLORS[en.muscle]||"var(--fg3)",flexShrink:0}} />
+                      <span style={{fontSize:12,fontWeight:500,flex:1,minWidth:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{en.name}</span>
+                      <span style={{fontSize:11,color:"var(--fg2)",fontFamily:"var(--mono)",flexShrink:0}}>{en.topWeight > 0 ? en.topWeight+"kg" : "BW"}</span>
+                      <span style={{fontSize:10,color:"var(--fg3)",fontFamily:"var(--mono)",flexShrink:0}}>{en.sets.length}s</span>
+                    </div>
+                  ))}
+                  {session.entries.some(en => en.note) && <div style={{fontSize:10,color:"var(--orange)",marginTop:4,fontStyle:"italic"}}>{session.entries.filter(en => en.note).map(en => en.note).join(" \u00b7 ")}</div>}
+                </Card>;
+              })}
+            </>)}
+
             {!history.length && <Card style={{textAlign:"center",padding:40}}><div style={{fontSize:32,marginBottom:8}}>{"\ud83d\udcc5"}</div><div style={{color:"var(--fg2)",fontSize:13}}>No workout history yet</div></Card>}
           </div>
         )}
 
-        {/* PLAN */}
+        {/* ─── PLAN ─── */}
         {view === "plans" && (
           <div style={{animation:"slideUp .2s ease"}}>
-            {/* Plan switcher */}
             <Card style={{padding:10}}>
               <div style={{fontSize:10,color:"var(--fg3)",fontWeight:700,marginBottom:6,textTransform:"uppercase",letterSpacing:1}}>Active Plan</div>
               <div style={{display:"flex",gap:8,alignItems:"center"}}>
@@ -651,7 +1001,6 @@ function FitnessTracker() {
               {activePlan && <div style={{fontSize:10,color:"var(--fg3)",fontFamily:"var(--mono)",marginTop:4}}>Since {activePlan.ValidFrom} {"\u00b7"} {planExercises.length} exercises {"\u00b7"} {dayList.length} days</div>}
             </Card>
 
-            {/* Plan header */}
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
               <div style={{flex:1}}>
                 {editingPlan ? (
@@ -664,7 +1013,6 @@ function FitnessTracker() {
               <button onClick={() => {setEditingPlan(!editingPlan); if(editingPlan) setShowAddEx(null);}} style={{padding:"8px 14px",borderRadius:8,border:"none",cursor:"pointer",fontSize:12,fontWeight:600,marginLeft:10,background:editingPlan?"var(--orange)":"var(--bg3)",color:editingPlan?"#0a0a0e":"var(--fg2)"}}>{editingPlan ? "\u2713 Done" : "\u270f\ufe0f Edit"}</button>
             </div>
 
-            {/* Day cards */}
             {dayList.map(day => (
               <Card key={day.num}>
                 <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
@@ -699,18 +1047,14 @@ function FitnessTracker() {
                     )}
                   </div>;
                 })}
-
-                {/* Add exercise button */}
                 {editingPlan && (<>
                   {showAddEx === day.num ? (
                     <div style={{marginTop:8,padding:10,background:"var(--bg)",borderRadius:8,border:"1px solid var(--bg4)"}}>
-                      {/* Toggle: Library / New */}
                       <div style={{display:"flex",gap:4,marginBottom:8}}>
                         {["library","new"].map(m => (
                           <button key={m} onClick={() => setAddExMode(m)} style={{flex:1,padding:"5px 8px",borderRadius:6,border:"none",fontSize:11,fontWeight:600,cursor:"pointer",background:addExMode===m?"var(--accent)":"var(--bg3)",color:addExMode===m?"#0a0a0e":"var(--fg2)"}}>{m==="library"?"From Library":"Create New"}</button>
                         ))}
                       </div>
-
                       {addExMode === "library" ? (
                         <div style={{maxHeight:200,overflowY:"auto"}}>
                           {exercises.filter(ex => !day.exercises.some(pe => pe.ExerciseName === ex.ExerciseName)).map(ex => (
@@ -753,7 +1097,6 @@ function FitnessTracker() {
               </Card>
             ))}
 
-            {/* Save as new version */}
             {editingPlan && (
               <button onClick={savePlanAsNewVersion} disabled={savingPlan} style={{width:"100%",padding:14,borderRadius:"var(--radius)",border:"none",background:savingPlan?"var(--bg4)":"linear-gradient(135deg,var(--accent) 0%,#8bc34a 100%)",color:"#0a0a0e",fontWeight:700,fontSize:14,cursor:savingPlan?"wait":"pointer",boxShadow:savingPlan?"none":"0 4px 20px rgba(197,244,103,.25)",transition:"all .2s",marginTop:4}}>
                 {savingPlan ? "Saving..." : "\ud83d\udce6 Save as New Plan Version"}
@@ -762,7 +1105,7 @@ function FitnessTracker() {
           </div>
         )}
 
-        {/* SETTINGS */}
+        {/* ─── SETTINGS ─── */}
         {view === "settings" && (
           <div style={{animation:"slideUp .2s ease"}}>
             <Card>
@@ -778,10 +1121,29 @@ function FitnessTracker() {
               </div>
               {synced && <div style={{marginTop:10,padding:"8px 12px",background:"rgba(103,244,168,.08)",border:"1px solid var(--green)",borderRadius:8,fontSize:12,color:"var(--green)",display:"flex",alignItems:"center",gap:8}}><span style={{width:8,height:8,borderRadius:"50%",background:"var(--green)"}} /> Connected to Google Sheet</div>}
             </Card>
+
+            <Card>
+              <div style={{fontSize:10,color:"var(--fg3)",fontWeight:700,marginBottom:8,textTransform:"uppercase",letterSpacing:1}}>Training Period</div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+                <div>
+                  <div style={{fontSize:10,color:"var(--fg3)",marginBottom:4}}>BLOCK</div>
+                  <input type="number" inputMode="numeric" value={currentBlock} onChange={e => setCurrentBlock(Math.max(1, Number(e.target.value)||1))} style={{width:"100%",background:"var(--bg)",border:"1px solid var(--bg4)",borderRadius:8,padding:"10px 12px",color:"var(--fg)",fontSize:16,outline:"none",fontFamily:"var(--mono)",textAlign:"center",fontWeight:700}} />
+                </div>
+                <div>
+                  <div style={{fontSize:10,color:"var(--fg3)",marginBottom:4}}>WEEK</div>
+                  <input type="number" inputMode="numeric" value={currentWeek} onChange={e => setCurrentWeek(Math.max(1, Number(e.target.value)||1))} style={{width:"100%",background:"var(--bg)",border:"1px solid var(--bg4)",borderRadius:8,padding:"10px 12px",color:"var(--fg)",fontSize:16,outline:"none",fontFamily:"var(--mono)",textAlign:"center",fontWeight:700}} />
+                </div>
+              </div>
+              <div style={{fontSize:11,color:"var(--fg3)",marginTop:8,lineHeight:1.5}}>
+                Block + Week are stamped on every saved workout and synced to your Sheet. Bump Week after your last session of each cycle; bump Block when you start a new training mesocycle.
+              </div>
+            </Card>
+
             <Card>
               <div style={{fontSize:10,color:"var(--fg3)",fontWeight:700,marginBottom:8,textTransform:"uppercase",letterSpacing:1}}>Install as App (PWA)</div>
               <div style={{fontSize:12,color:"var(--fg2)",lineHeight:1.6}}>On iPhone: Open in Safari {"\u2192"} Share {"\u2192"} {"\u0022"}Add to Home Screen{"\u0022"}.</div>
             </Card>
+
             <Card>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                 <div>
@@ -793,7 +1155,6 @@ function FitnessTracker() {
             </Card>
           </div>
         )}
-
       </main>
     </div>
   </>);
