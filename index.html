@@ -409,31 +409,104 @@ function FitnessTracker() {
     return logs.filter(l => l.ExerciseName === progressEx).sort((a, b) => a.Date.localeCompare(b.Date)).map(l => ({ date: fmtDate(l.Date), fullDate: l.Date, topWeight: topWeight(l), totalVol: totalVolume(l) }));
   }, [logs, progressEx]);
 
-  // ── History: calendar weeks grouped by (block, week) ──
+  // ── History: calendar weeks grouped by (planId, block, week), split into separate
+  // "runs" whenever there's a >14-day gap between sessions of the same group. This
+  // correctly disambiguates reused (block, week) combos across plans and across
+  // separate cycles of the same plan.
+  const RUN_GAP_DAYS = 14;
+  const planNameById = useMemo(() => {
+    const m = {};
+    allPlans.forEach(p => { m[p.PlanID] = p.PlanName; });
+    if (activePlan && !m[activePlan.PlanID]) m[activePlan.PlanID] = activePlan.PlanName;
+    return m;
+  }, [allPlans, activePlan]);
+
   const calendarWeeks = useMemo(() => {
-    const byWeek = {};
-    logs.forEach(l => {
+    const sortedLogs = [...logs].sort((a, b) => a.Date.localeCompare(b.Date));
+    // Bucket by (planId, block, week)
+    const byKey = {};
+    sortedLogs.forEach(l => {
+      const planId = l.PlanID || "?";
       const week = Number(l.Week) || 1;
       const block = Number(l.Block) || 1;
-      const key = block + "-" + week;
-      if (!byWeek[key]) byWeek[key] = { week, block, planId: l.PlanID, days: new Set(), dates: new Set(), exercises: 0, totalVol: 0, notes: [] };
-      byWeek[key].days.add(l.DayNumber);
-      byWeek[key].dates.add(l.Date);
-      byWeek[key].exercises++;
-      byWeek[key].totalVol += totalVolume(l);
-      if (l.Note) byWeek[key].notes.push(l.Note);
+      const key = planId + "::" + block + "::" + week;
+      if (!byKey[key]) byKey[key] = [];
+      byKey[key].push(l);
     });
-    return Object.values(byWeek)
-      .map(w => ({ ...w, days: [...w.days], dates: [...w.dates].sort(), notes: [...new Set(w.notes)] }))
-      .sort((a, b) => a.block === b.block ? a.week - b.week : a.block - b.block);
-  }, [logs]);
+    // Detect how many distinct plans appear (to decide whether to show plan badges)
+    const planIdsSeen = new Set(sortedLogs.map(l => l.PlanID || "?"));
+    const multiPlan = planIdsSeen.size > 1;
+    const result = [];
+    Object.entries(byKey).forEach(([key, keyLogs]) => {
+      const [planId, blockStr, weekStr] = key.split("::");
+      const block = Number(blockStr);
+      const week = Number(weekStr);
+      // Split into runs by date gap
+      const runs = [];
+      let current = [];
+      let lastDate = null;
+      keyLogs.forEach(l => {
+        if (lastDate) {
+          const diff = (new Date(l.Date) - new Date(lastDate)) / 86400000;
+          if (diff > RUN_GAP_DAYS) { runs.push(current); current = []; }
+        }
+        current.push(l);
+        lastDate = l.Date;
+      });
+      if (current.length) runs.push(current);
+      runs.forEach((runLogs, runIdx) => {
+        const days = new Set(), dates = new Set(), notes = [];
+        let exercises = 0, totalVol = 0;
+        runLogs.forEach(l => {
+          days.add(l.DayNumber);
+          dates.add(l.Date);
+          exercises++;
+          totalVol += totalVolume(l);
+          if (l.Note) notes.push(l.Note);
+        });
+        const sortedDates = [...dates].sort();
+        result.push({
+          planId, planName: planNameById[planId] || planId,
+          block, week,
+          runIndex: runIdx + 1,
+          runTotal: runs.length,
+          firstDate: sortedDates[0],
+          lastDate: sortedDates[sortedDates.length - 1],
+          days: [...days],
+          dates: sortedDates,
+          weekLogs: runLogs,
+          exercises,
+          totalVol,
+          notes: [...new Set(notes)],
+          multiPlan,
+        });
+      });
+    });
+    // Sort chronologically by first date of the run
+    result.sort((a, b) => a.firstDate.localeCompare(b.firstDate));
+    return result;
+  }, [logs, planNameById]);
 
-  // ── History: detail for the currently-selected week, with trend classification ──
+  // Find the "current" calendar entry = most recent run of (activePlan, currentBlock, currentWeek)
+  const currentWeekIdx = useMemo(() => {
+    if (!activePlan) return -1;
+    for (let i = calendarWeeks.length - 1; i >= 0; i--) {
+      const w = calendarWeeks[i];
+      if (w.planId === activePlan.PlanID && w.block === currentBlock && w.week === currentWeek) return i;
+    }
+    return -1;
+  }, [calendarWeeks, activePlan, currentBlock, currentWeek]);
+
+  // ── History: detail for the currently-selected run, with trend classification.
+  // Uses the run's own pre-sliced logs so it only ever shows sessions that actually
+  // belong to this (plan, block, week, run) — never mixing with other cycles.
   const weekDetail = useMemo(() => {
     if (calSelectedWeek === null) return null;
     const sel = calendarWeeks[calSelectedWeek];
     if (!sel) return null;
-    const weekLogs = logs.filter(l => (Number(l.Week)||1) === sel.week && (Number(l.Block)||1) === sel.block);
+    const weekLogs = sel.weekLogs || [];
+    // Prior-session lookup stays global per exercise (trend tracks progression on
+    // the movement itself, independent of which plan you were on at the time).
     const sortedLogs = [...logs].sort((a, b) => a.Date.localeCompare(b.Date));
     const prevByExercise = (exerciseName, date) => {
       const priors = sortedLogs.filter(l => l.ExerciseName === exerciseName && l.Date < date);
@@ -466,11 +539,12 @@ function FitnessTracker() {
   // ── Whoop AI summary ──
   const buildWhoopString = (detail) => {
     if (!detail) return "";
-    const planTitle = activePlan ? activePlan.PlanName : "Training plan";
+    const planTitle = detail.planName || (activePlan ? activePlan.PlanName : "Training plan");
     const dates = detail.dates;
     const rangeStr = dates.length > 1 ? (dates[0] + " to " + dates[dates.length - 1]) : dates[0];
+    const runLabel = detail.runTotal > 1 ? (" (run " + detail.runIndex + "/" + detail.runTotal + ")") : "";
     const lines = [];
-    lines.push("Strength training week \u2014 Block " + detail.block + " \u00b7 Week " + detail.week + " (" + rangeStr + ")");
+    lines.push("Strength training week \u2014 Block " + detail.block + " \u00b7 Week " + detail.week + runLabel + " (" + rangeStr + ")");
     lines.push("Plan: " + planTitle);
     lines.push("");
     detail.dayDetails.forEach(dd => {
@@ -508,9 +582,14 @@ function FitnessTracker() {
     }
   };
 
-  // ── Progress: weekly volume by muscle (current Week+Block) ──
+  // ── Progress: weekly volume by muscle (active plan, current Week+Block) ──
   const volumeByMuscle = useMemo(() => {
-    const weekLogs = logs.filter(l => (Number(l.Week)||1) === currentWeek && (Number(l.Block)||1) === currentBlock);
+    const activeId = activePlan ? activePlan.PlanID : null;
+    const weekLogs = logs.filter(l =>
+      (!activeId || l.PlanID === activeId) &&
+      (Number(l.Week)||1) === currentWeek &&
+      (Number(l.Block)||1) === currentBlock
+    );
     const vol = {};
     weekLogs.forEach(l => {
       const ex = exMap[l.ExerciseName];
@@ -518,7 +597,7 @@ function FitnessTracker() {
       vol[ex.MuscleGroup] = (vol[ex.MuscleGroup] || 0) + totalVolume(l);
     });
     return Object.entries(vol).map(([muscle, volume]) => ({ muscle, volume: Math.round(volume) })).sort((a,b) => b.volume - a.volume);
-  }, [logs, currentWeek, currentBlock, exMap]);
+  }, [logs, currentWeek, currentBlock, activePlan, exMap]);
 
   const history = useMemo(() => {
     const byDate = {};
@@ -830,12 +909,15 @@ input[type=number]{-moz-appearance:textfield}
               <div ref={calScrollRef} style={{overflowX:"auto",padding:"10px",display:"flex",gap:6,whiteSpace:"nowrap"}}>
                 {calendarWeeks.map((w, idx) => {
                   const isSelected = calSelectedWeek === idx;
-                  const isCurrent = w.week === currentWeek && w.block === currentBlock;
+                  const isCurrent = idx === currentWeekIdx;
                   const blockColor = BLOCK_COLORS[(w.block - 1) % BLOCK_COLORS.length];
                   const uniqueDays = w.days.length;
+                  const showPlanBadge = w.multiPlan;
+                  // Short plan code for badge: take initials or first 3 chars
+                  const planBadge = (w.planName || w.planId || "").split(/[\s-]+/).map(s => s[0]).join("").slice(0,3).toUpperCase() || "P";
                   return (
                     <button key={idx} onClick={() => handleTapWeek(idx)} style={{
-                      flex:"0 0 auto",minWidth:74,padding:"8px 10px",borderRadius:10,
+                      flex:"0 0 auto",minWidth:78,padding:"8px 10px",borderRadius:10,
                       background: isSelected ? "var(--bg4)" : "var(--bg)",
                       border: isCurrent ? "2px solid var(--accent)" : isSelected ? ("2px solid " + blockColor) : "1px solid var(--bg3)",
                       cursor:"pointer",textAlign:"center",transition:"all .15s",position:"relative",
@@ -844,25 +926,29 @@ input[type=number]{-moz-appearance:textfield}
                       <div style={{display:"flex",alignItems:"center",gap:4,marginBottom:2,justifyContent:"center"}}>
                         <div style={{width:6,height:6,borderRadius:2,background:blockColor}} />
                         <span style={{fontSize:9,color:"var(--fg3)",fontFamily:"var(--mono)",textTransform:"uppercase",letterSpacing:.5}}>B{w.block}</span>
+                        {showPlanBadge && <span style={{fontSize:8,color:"var(--fg3)",fontFamily:"var(--mono)",background:"var(--bg3)",padding:"1px 4px",borderRadius:3,marginLeft:2}}>{planBadge}</span>}
                       </div>
                       <div style={{fontSize:17,fontWeight:700,color:isSelected?"var(--accent)":"var(--fg)",fontFamily:"var(--mono)",lineHeight:1}}>W{w.week}</div>
+                      {w.runTotal > 1 && (
+                        <div style={{fontSize:8,color:"var(--orange)",fontFamily:"var(--mono)",marginTop:1}}>run {w.runIndex}/{w.runTotal}</div>
+                      )}
                       <div style={{display:"flex",gap:3,marginTop:6,justifyContent:"center"}}>
                         {Array.from({length: Math.max(1, uniqueDays)}).map((_, di) => (
                           <div key={di} style={{width:6,height:6,borderRadius:"50%",background: di < uniqueDays ? blockColor : "var(--bg4)"}} />
                         ))}
                       </div>
-                      <div style={{fontSize:8,color:"var(--fg3)",marginTop:4,fontFamily:"var(--mono)"}}>{uniqueDays}d \u00b7 {w.exercises}ex</div>
+                      <div style={{fontSize:8,color:"var(--fg3)",marginTop:4,fontFamily:"var(--mono)"}}>{fmtDate(w.firstDate)} \u00b7 {uniqueDays}d</div>
                     </button>
                   );
                 })}
-                {!calendarWeeks.some(w => w.week === currentWeek && w.block === currentBlock) && (
-                  <div style={{flex:"0 0 auto",minWidth:74,padding:"8px 10px",borderRadius:10,background:"var(--bg)",border:"2px dashed var(--accent)",textAlign:"center",animation:"pulseRing 2s infinite"}}>
+                {currentWeekIdx === -1 && (
+                  <div style={{flex:"0 0 auto",minWidth:78,padding:"8px 10px",borderRadius:10,background:"var(--bg)",border:"2px dashed var(--accent)",textAlign:"center",animation:"pulseRing 2s infinite"}}>
                     <div style={{fontSize:9,color:"var(--fg3)",fontFamily:"var(--mono)",marginBottom:2}}>B{currentBlock}</div>
                     <div style={{fontSize:17,fontWeight:700,color:"var(--accent)",fontFamily:"var(--mono)",lineHeight:1}}>W{currentWeek}</div>
                     <div style={{fontSize:9,color:"var(--fg3)",marginTop:6,fontFamily:"var(--mono)"}}>now</div>
                   </div>
                 )}
-                {calendarWeeks.length === 0 && (
+                {calendarWeeks.length === 0 && currentWeekIdx !== -1 && (
                   <div style={{padding:"14px 10px",color:"var(--fg3)",fontSize:12,fontStyle:"italic"}}>No logged weeks yet</div>
                 )}
               </div>
@@ -872,12 +958,17 @@ input[type=number]{-moz-appearance:textfield}
                 <div style={{padding:"10px",animation:"fadeSlide .2s ease"}}>
                   <div style={{background:"var(--bg)",border:"1px solid var(--bg3)",borderRadius:"var(--radius)",overflow:"hidden"}}>
                     {/* Header */}
-                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 14px",borderBottom:"1px solid var(--bg3)"}}>
-                      <div>
-                        <span style={{fontWeight:700,fontSize:14}}>Block {weekDetail.block} \u00b7 Week {weekDetail.week}</span>
-                        <span style={{fontSize:11,color:"var(--fg3)",marginLeft:10,fontFamily:"var(--mono)"}}>{weekDetail.dates.length > 1 ? (weekDetail.dates[0] + " \u2192 " + weekDetail.dates[weekDetail.dates.length-1]) : weekDetail.dates[0]}</span>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 14px",borderBottom:"1px solid var(--bg3)",gap:8}}>
+                      <div style={{minWidth:0,flex:1}}>
+                        <div style={{display:"flex",alignItems:"baseline",gap:8,flexWrap:"wrap"}}>
+                          <span style={{fontWeight:700,fontSize:14}}>Block {weekDetail.block} \u00b7 Week {weekDetail.week}</span>
+                          {weekDetail.runTotal > 1 && <span style={{fontSize:10,color:"var(--orange)",fontFamily:"var(--mono)",background:"rgba(244,168,103,.15)",padding:"2px 6px",borderRadius:4}}>run {weekDetail.runIndex}/{weekDetail.runTotal}</span>}
+                        </div>
+                        <div style={{fontSize:10,color:"var(--fg3)",fontFamily:"var(--mono)",marginTop:2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                          {weekDetail.planName} \u00b7 {weekDetail.dates.length > 1 ? (weekDetail.dates[0] + " \u2192 " + weekDetail.dates[weekDetail.dates.length-1]) : weekDetail.dates[0]}
+                        </div>
                       </div>
-                      <button onClick={() => setCalSelectedWeek(null)} title="Close" style={{background:"none",border:"none",color:"var(--fg3)",fontSize:16,cursor:"pointer",padding:"2px 6px",lineHeight:1}}>{"\u2715"}</button>
+                      <button onClick={() => setCalSelectedWeek(null)} title="Close" style={{background:"none",border:"none",color:"var(--fg3)",fontSize:16,cursor:"pointer",padding:"2px 6px",lineHeight:1,flexShrink:0}}>{"\u2715"}</button>
                     </div>
 
                     {/* Stats */}
