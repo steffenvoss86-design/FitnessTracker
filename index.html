@@ -19,7 +19,8 @@
 <script src="https://unpkg.com/@babel/standalone@7.24.0/babel.min.js" crossorigin></script>
 <script type="text/babel">
 const { useState, useEffect, useRef, useMemo, useCallback } = React;
-const { XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar, CartesianGrid, Area, AreaChart } = Recharts;
+// 1. Add Cell to the import 
+const { XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar, Cell, CartesianGrid, Area, AreaChart } = Recharts;
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // LOCALSTORAGE
@@ -126,7 +127,6 @@ const DEMO_PLAN_EXERCISES = [
   { PlanExerciseID:"P1-22",PlanID:"P1",DayNumber:5,DayLabel:"FRI",DayName:"Hybrid",SortOrder:4,ExerciseName:"Cooldown & Mobility",TargetSets:1,TargetReps:"\u2014",ProgressionRule:"" },
 ];
 
-// Demo logs carry Week + Block so the History calendar is populated out of the box.
 const DEMO_LOG = [
   { LogID:"d01",Date:"2026-01-26",PlanID:"P1",DayNumber:1,ExerciseName:"Barbell Bench Press",S1Reps:8,S1Weight:70,S2Reps:8,S2Weight:80,S3Reps:7,S3Weight:80,S4Reps:6,S4Weight:80,S5Reps:5,S5Weight:85,RPE:"",Note:"",Week:5,Block:1 },
   { LogID:"d02",Date:"2026-01-26",PlanID:"P1",DayNumber:1,ExerciseName:"Incline DB Bench",S1Reps:12,S1Weight:42,S2Reps:12,S2Weight:42,S3Reps:4,S3Weight:52,RPE:"",Note:"",Week:5,Block:1 },
@@ -192,11 +192,7 @@ function totalVolume(log) {
   return vol;
 }
 
-// Trend classification: compare current session to prior session of same exercise.
-// Returns 'new' | 'green' | 'amber' | 'red'.
-//   green = improved (weight up & vol >=, or weight same & vol up)
-//   amber = trade-off / on par
-//   red   = regression
+// Trend classification
 function classifyTrend(curr, prev) {
   if (!prev) return "new";
   const TOL = 0.015;
@@ -212,6 +208,46 @@ function classifyTrend(curr, prev) {
   if (wDown && vUp) return "amber";
   if (wSame && vSame) return "amber";
   return "red";
+}
+
+// Automatically calculates next targets based on rule strings (e.g. "+2.5kg")
+function getRecommendedSets(last, pe) {
+  if (!last || !last.sets || !last.sets.length) return null;
+  const rule = (pe.ProgressionRule || "").toLowerCase();
+  const targetSets = Number(pe.TargetSets) || 3;
+  
+  // Extract max rep target from string like "8-12 reps"
+  let targetRepCount = 0;
+  const repMatch = pe.TargetReps.match(/(?:-|to)?\s*(\d+)\s*reps?/i);
+  if (repMatch) targetRepCount = parseInt(repMatch[1]);
+
+  // Extract weight increment from rule like "+2.5kg when 3x12"
+  const weightMatch = rule.match(/\+([\d\.]+)\s*kg/);
+  const weightInc = weightMatch ? parseFloat(weightMatch[1]) : 0;
+
+  // Did you hit the target reps across all prescribed sets last week?
+  let achievedAll = true;
+  let validSetsCount = 0;
+  last.sets.forEach((s, i) => {
+    if (i < targetSets) {
+      if (Number(s.reps) < targetRepCount) achievedAll = false;
+      validSetsCount++;
+    }
+  });
+  if (validSetsCount < targetSets) achievedAll = false;
+
+  const rec = [];
+  for (let i = 0; i < targetSets; i++) {
+    const prevSet = last.sets[i] || last.sets[last.sets.length - 1];
+    if (!prevSet) continue;
+    let nextW = Number(prevSet.weight);
+    // Apply progressive overload if conditions were met
+    if (achievedAll && weightInc > 0) {
+      nextW = nextW + weightInc;
+    }
+    rec.push({ reps: prevSet.reps, weight: nextW, progressed: achievedAll && weightInc > 0 });
+  }
+  return { sets: rec, progressed: achievedAll && weightInc > 0 };
 }
 
 function Card({ children, style }) {
@@ -270,7 +306,7 @@ function FitnessTracker() {
   const [logSaved, setLogSaved] = useState({});
   const [synced, setSynced] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [syncDiag, setSyncDiag] = useState(null); // {sessions, logs, err}
+  const [syncDiag, setSyncDiag] = useState(null); 
   const [editingPlan, setEditingPlan] = useState(false);
   const [savingPlan, setSavingPlan] = useState(false);
   const [showAddEx, setShowAddEx] = useState(null);
@@ -280,13 +316,11 @@ function FitnessTracker() {
   const [allPlans, setAllPlans] = useState([DEMO_PLAN]);
   const [allPlanExercises, setAllPlanExercises] = useState(DEMO_PLAN_EXERCISES);
 
-  // NEW: Week + Block tracking (persisted)
   const [currentWeek, setCurrentWeek] = useState(() => Number(LS.get("currentWeek","1")) || 1);
   const [currentBlock, setCurrentBlock] = useState(() => Number(LS.get("currentBlock","1")) || 1);
   useEffect(() => { LS.set("currentWeek", String(currentWeek)); }, [currentWeek]);
   useEffect(() => { LS.set("currentBlock", String(currentBlock)); }, [currentBlock]);
 
-  // NEW: History week-strip selection + scroll ref
   const [calSelectedWeek, setCalSelectedWeek] = useState(null);
   const calScrollRef = useRef(null);
 
@@ -296,14 +330,12 @@ function FitnessTracker() {
     setActiveDayNum(map[dow] || 1);
   }, []);
 
-  // Auto-connect on load if credentials are saved
   useEffect(() => {
     if (apiUrl && apiKey) {
       syncFromApi(apiUrl, apiKey);
     }
   }, []);
 
-  // Auto-scroll the History week-strip to the end whenever History opens
   useEffect(() => {
     if (view === "history" && calScrollRef.current) {
       setTimeout(() => {
@@ -330,13 +362,10 @@ function FitnessTracker() {
         if (data.allPlanExercises && data.allPlanExercises.length) setAllPlanExercises(data.allPlanExercises);
         if (data.planExercises && data.planExercises.length) setPlanExercises(data.planExercises);
         setSynced(true);
-        // Init succeeded, so credentials are good. Clear demo logs — real data comes next.
-        // If history returns nothing, user sees an honest empty state instead of stale demo.
         setLogs([]);
         showToast("Synced with Google Sheet");
       }
       const hist = await api.get("history", { limit: "500" });
-      console.log("[WorkoutTracker] history response:", hist);
       if (hist && hist.ok === false) {
         diag.err = "server: " + (hist.error || "unknown error");
         showToast("History endpoint error \u2014 see Setup", 4000);
@@ -424,10 +453,6 @@ function FitnessTracker() {
     return logs.filter(l => l.ExerciseName === progressEx).sort((a, b) => a.Date.localeCompare(b.Date)).map(l => ({ date: fmtDate(l.Date), fullDate: l.Date, topWeight: topWeight(l), totalVol: totalVolume(l) }));
   }, [logs, progressEx]);
 
-  // ── History: calendar weeks grouped by (planId, block, week), split into separate
-  // "runs" whenever there's a >14-day gap between sessions of the same group. This
-  // correctly disambiguates reused (block, week) combos across plans and across
-  // separate cycles of the same plan.
   const RUN_GAP_DAYS = 14;
   const planNameById = useMemo(() => {
     const m = {};
@@ -438,7 +463,6 @@ function FitnessTracker() {
 
   const calendarWeeks = useMemo(() => {
     const sortedLogs = [...logs].sort((a, b) => a.Date.localeCompare(b.Date));
-    // Bucket by (planId, block, week)
     const byKey = {};
     sortedLogs.forEach(l => {
       const planId = l.PlanID || "?";
@@ -448,7 +472,6 @@ function FitnessTracker() {
       if (!byKey[key]) byKey[key] = [];
       byKey[key].push(l);
     });
-    // Detect how many distinct plans appear (to decide whether to show plan badges)
     const planIdsSeen = new Set(sortedLogs.map(l => l.PlanID || "?"));
     const multiPlan = planIdsSeen.size > 1;
     const result = [];
@@ -456,7 +479,6 @@ function FitnessTracker() {
       const [planId, blockStr, weekStr] = key.split("::");
       const block = Number(blockStr);
       const week = Number(weekStr);
-      // Split into runs by date gap
       const runs = [];
       let current = [];
       let lastDate = null;
@@ -497,12 +519,10 @@ function FitnessTracker() {
         });
       });
     });
-    // Sort chronologically by first date of the run
     result.sort((a, b) => a.firstDate.localeCompare(b.firstDate));
     return result;
   }, [logs, planNameById]);
 
-  // Find the "current" calendar entry = most recent run of (activePlan, currentBlock, currentWeek)
   const currentWeekIdx = useMemo(() => {
     if (!activePlan) return -1;
     for (let i = calendarWeeks.length - 1; i >= 0; i--) {
@@ -512,16 +532,11 @@ function FitnessTracker() {
     return -1;
   }, [calendarWeeks, activePlan, currentBlock, currentWeek]);
 
-  // ── History: detail for the currently-selected run, with trend classification.
-  // Uses the run's own pre-sliced logs so it only ever shows sessions that actually
-  // belong to this (plan, block, week, run) — never mixing with other cycles.
   const weekDetail = useMemo(() => {
     if (calSelectedWeek === null) return null;
     const sel = calendarWeeks[calSelectedWeek];
     if (!sel) return null;
     const weekLogs = sel.weekLogs || [];
-    // Prior-session lookup stays global per exercise (trend tracks progression on
-    // the movement itself, independent of which plan you were on at the time).
     const sortedLogs = [...logs].sort((a, b) => a.Date.localeCompare(b.Date));
     const prevByExercise = (exerciseName, date) => {
       const priors = sortedLogs.filter(l => l.ExerciseName === exerciseName && l.Date < date);
@@ -551,7 +566,6 @@ function FitnessTracker() {
 
   const handleTapWeek = (idx) => setCalSelectedWeek(calSelectedWeek === idx ? null : idx);
 
-  // ── Whoop AI summary ──
   const buildWhoopString = (detail) => {
     if (!detail) return "";
     const planTitle = detail.planName || (activePlan ? activePlan.PlanName : "Training plan");
@@ -597,7 +611,6 @@ function FitnessTracker() {
     }
   };
 
-  // ── Progress: weekly volume by muscle (active plan, current Week+Block) ──
   const volumeByMuscle = useMemo(() => {
     const activeId = activePlan ? activePlan.PlanID : null;
     const weekLogs = logs.filter(l =>
@@ -624,7 +637,6 @@ function FitnessTracker() {
     return Object.values(byDate).sort((a, b) => b.date.localeCompare(a.date));
   }, [logs, exMap]);
 
-  // ─── Plan management ────────────────────────────────
   const addExerciseToDay = useCallback((dayNum, exerciseName, targetSets, targetReps, progressionRule) => {
     const day = days[dayNum];
     const maxSort = day ? Math.max(0, ...day.exercises.map(e => e.SortOrder)) : 0;
@@ -804,6 +816,20 @@ input[type=number]{-moz-appearance:textfield}
               const isSaved = logSaved[pe.ExerciseName];
               const mc = MUSCLE_COLORS[ex.MuscleGroup] || "var(--fg3)";
               const numSets = Number(pe.TargetSets) || 3;
+              
+              const recommendation = getRecommendedSets(last, pe);
+
+              const handleAutoFill = () => {
+                if (!recommendation) return;
+                setLogDraft(prev => {
+                  const copy = [...(prev[pe.ExerciseName] || [])];
+                  recommendation.sets.forEach((rec, i) => {
+                    copy[i] = { reps: rec.reps, weight: rec.weight };
+                  });
+                  return { ...prev, [pe.ExerciseName]: copy };
+                });
+              };
+
               return (
                 <div key={pe.PlanExerciseID} style={{background:isSaved?"rgba(103,244,168,.06)":"var(--bg2)",border:isSaved?"1px solid var(--green)":"1px solid var(--bg3)",borderRadius:"var(--radius)",padding:14,marginBottom:10,transition:"all .3s"}}>
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6}}>
@@ -815,10 +841,17 @@ input[type=number]{-moz-appearance:textfield}
                       </div>
                       <div style={{fontSize:11,color:"var(--fg3)",marginTop:2,marginLeft:16}}>{pe.TargetReps} {"\u00b7"} {pe.TargetSets}s {"\u00b7"} <span style={{color:mc}}>{ex.MuscleGroup}</span></div>
                     </div>
-                    {ex.DefaultCue && <button onClick={() => setShowCue(showCue===pe.PlanExerciseID?null:pe.PlanExerciseID)} style={{background:showCue===pe.PlanExerciseID?"var(--accent)":"var(--bg4)",color:showCue===pe.PlanExerciseID?"#0a0a0e":"var(--fg3)",border:"none",borderRadius:6,padding:"4px 8px",fontSize:11,cursor:"pointer",fontWeight:600}}>Cue</button>}
+                    <div style={{display:"flex",gap:6}}>
+                      {recommendation && (
+                        <button onClick={handleAutoFill} style={{background:"var(--bg4)",color:recommendation.progressed?"var(--accent)":"var(--fg)",border:recommendation.progressed?"1px solid var(--accent)":"none",borderRadius:6,padding:"4px 8px",fontSize:11,cursor:"pointer",fontWeight:600}}>
+                          {recommendation.progressed ? "\u26A1 Auto-Progression" : "Auto-Fill"}
+                        </button>
+                      )}
+                      {ex.DefaultCue && <button onClick={() => setShowCue(showCue===pe.PlanExerciseID?null:pe.PlanExerciseID)} style={{background:showCue===pe.PlanExerciseID?"var(--accent)":"var(--bg4)",color:showCue===pe.PlanExerciseID?"#0a0a0e":"var(--fg3)",border:"none",borderRadius:6,padding:"4px 8px",fontSize:11,cursor:"pointer",fontWeight:600}}>Cue</button>}
+                    </div>
                   </div>
                   {showCue===pe.PlanExerciseID && <div style={{background:"var(--bg4)",borderRadius:8,padding:"8px 12px",fontSize:12,color:"var(--accent2)",marginBottom:8,lineHeight:1.5,borderLeft:"3px solid var(--accent)"}}>{"\ud83d\udca1"} {ex.DefaultCue}</div>}
-                  {pe.ProgressionRule && <div style={{fontSize:11,color:"var(--blue)",marginBottom:6,fontFamily:"var(--mono)",padding:"3px 0",display:"flex",alignItems:"center",gap:6}}><span style={{fontSize:10}}>{"\ud83c\udfaf"}</span> {pe.ProgressionRule}</div>}
+                  {pe.ProgressionRule && <div style={{fontSize:11,color:recommendation?.progressed?"var(--accent)":"var(--blue)",marginBottom:6,fontFamily:"var(--mono)",padding:"3px 0",display:"flex",alignItems:"center",gap:6}}><span style={{fontSize:10}}>{"\ud83c\udfaf"}</span> {pe.ProgressionRule}</div>}
                   {last && <div style={{fontSize:11,color:"var(--fg3)",marginBottom:8,fontFamily:"var(--mono)",padding:"4px 8px",background:"var(--bg)",borderRadius:6,display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
                     <span style={{color:"var(--fg2)",fontWeight:700,fontSize:10}}>LAST</span>
                     {last.sets.map((s, i) => <span key={i}>{i > 0 && <span style={{color:"var(--bg4)",margin:"0 2px"}}>/</span>}{s.reps}{"\u00d7"}{s.weight}</span>)}
@@ -828,11 +861,14 @@ input[type=number]{-moz-appearance:textfield}
                     <div /><div style={{fontSize:9,color:"var(--fg3)",fontWeight:700,textAlign:"center",letterSpacing:1}}>REPS</div><div style={{fontSize:9,color:"var(--fg3)",fontWeight:700,textAlign:"center",letterSpacing:1}}>KG</div>
                     {Array.from({length:numSets}).map((_,si) => {
                       const v = (logDraft[pe.ExerciseName] || [])[si] || {};
-                      const inp = {background:"var(--bg)",border:"1px solid var(--bg4)",borderRadius:8,padding:"9px 8px",color:"var(--fg)",fontSize:15,textAlign:"center",outline:"none",width:"100%",fontFamily:"var(--mono)"};
+                      const recW = recommendation?.sets[si]?.weight;
+                      const recR = recommendation?.sets[si]?.reps;
+                      
+                      const inp = {background:recommendation?.progressed&&!v.weight?"rgba(197,244,103,.05)":"var(--bg)",border:recommendation?.progressed&&!v.weight?"1px solid rgba(197,244,103,.3)":"1px solid var(--bg4)",borderRadius:8,padding:"9px 8px",color:"var(--fg)",fontSize:15,textAlign:"center",outline:"none",width:"100%",fontFamily:"var(--mono)"};
                       return <React.Fragment key={si}>
                         <div style={{fontSize:11,fontFamily:"var(--mono)",color:"var(--fg3)",fontWeight:700,width:28,textAlign:"center"}}>S{si+1}</div>
-                        <input type="number" inputMode="numeric" placeholder={last && last.sets[si] ? last.sets[si].reps : "\u2014"} value={v.reps || ""} onChange={e => handleSetChange(pe.ExerciseName,si,"reps",e.target.value)} style={inp} />
-                        <input type="number" inputMode="decimal" placeholder={last && last.sets[si] ? last.sets[si].weight : "\u2014"} value={v.weight || ""} onChange={e => handleSetChange(pe.ExerciseName,si,"weight",e.target.value)} style={inp} />
+                        <input type="number" inputMode="numeric" placeholder={recR || (last && last.sets[si] ? last.sets[si].reps : "\u2014")} value={v.reps || ""} onChange={e => handleSetChange(pe.ExerciseName,si,"reps",e.target.value)} style={inp} />
+                        <input type="number" inputMode="decimal" placeholder={recW || (last && last.sets[si] ? last.sets[si].weight : "\u2014")} value={v.weight || ""} onChange={e => handleSetChange(pe.ExerciseName,si,"weight",e.target.value)} style={inp} />
                       </React.Fragment>;
                     })}
                   </div>
@@ -904,7 +940,7 @@ input[type=number]{-moz-appearance:textfield}
                     <Tooltip contentStyle={{background:"#131318",border:"1px solid #262630",borderRadius:8,fontSize:12,fontFamily:"Space Mono"}} cursor={{fill:"rgba(197,244,103,.05)"}} />
                     <Bar dataKey="volume" radius={[0,4,4,0]}>
                       {volumeByMuscle.map((entry, i) => (
-                        <Bar key={i} fill={MUSCLE_COLORS[entry.muscle] || "#67a8f4"} />
+                        <Cell key={i} fill={MUSCLE_COLORS[entry.muscle] || "#67a8f4"} />
                       ))}
                     </Bar>
                   </BarChart>
