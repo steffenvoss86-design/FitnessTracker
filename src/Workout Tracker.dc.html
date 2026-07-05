@@ -236,42 +236,73 @@
     <!-- ══════ PLAN ══════ -->
     <sc-if value="{{ isPlan }}" hint-placeholder-val="{{ false }}">
     <div style="animation:wtUp .2s ease;">
-      <div style="font-size:11px;font-family:'Space Mono',monospace;color:#5a5850;margin-bottom:12px;">{{ planName }} · tap −/+ arrows to reorder, × to remove</div>
+      <div style="margin-bottom:8px;font-size:11px;font-family:'Space Mono',monospace;letter-spacing:.1em;color:#5a5850;">ACTIVE PLAN</div>
+      <select value="{{ activePlanId }}" onChange="{{ onSwitchPlan }}" style="width:100%;background:#131318;border:1px solid #262630;border-radius:12px;color:#ece9e3;font-size:14px;font-weight:700;padding:13px;outline:none;cursor:pointer;">
+        <sc-for list="{{ planOptions }}" as="p" hint-placeholder-count="2"><option value="{{ p.id }}">{{ p.label }}</option></sc-for>
+      </select>
+      <div style="font-size:11px;color:#5a5850;margin:6px 2px 14px;">Switching changes what Log &amp; Progress use. Edits save on this device.</div>
+
       <sc-for list="{{ planDays }}" as="d" hint-placeholder-count="5">
         <div style="background:#131318;border:1px solid #1c1c24;border-radius:16px;padding:14px;margin-bottom:10px;">
-          <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:10px;"><span style="font-family:'Space Mono',monospace;font-weight:700;font-size:12px;color:#c5f467;">{{ d.label }}</span><span style="font-size:14px;font-weight:700;">{{ d.name }}</span></div>
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+            <input value="{{ d.label }}" onInput="{{ d.onLabel }}" style="width:62px;background:#0a0a0e;border:1px solid #262630;border-radius:8px;color:#c5f467;font-family:'Space Mono',monospace;font-weight:700;font-size:12px;padding:7px 6px;outline:none;text-align:center;" />
+            <input value="{{ d.name }}" onInput="{{ d.onName }}" style="flex:1;min-width:0;background:#0a0a0e;border:1px solid #262630;border-radius:8px;color:#ece9e3;font-size:14px;font-weight:700;padding:7px 10px;outline:none;" />
+            <button onClick="{{ d.onRemoveDay }}" style="background:#1c1c24;border:none;color:#f46767;border-radius:7px;width:30px;height:30px;cursor:pointer;font-size:15px;flex:none;">×</button>
+          </div>
           <sc-for list="{{ d.exercises }}" as="pe" hint-placeholder-count="4">
-            <div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-top:1px solid #1c1c24;">
-              <div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:600;">{{ pe.name }}</div><div style="font-size:11px;font-family:'Space Mono',monospace;color:#5a5850;">{{ pe.target }}</div></div>
-              <button onClick="{{ pe.onUp }}" style="background:#1c1c24;border:none;color:#9a9790;border-radius:7px;width:30px;height:30px;cursor:pointer;font-size:13px;">↑</button>
-              <button onClick="{{ pe.onDown }}" style="background:#1c1c24;border:none;color:#9a9790;border-radius:7px;width:30px;height:30px;cursor:pointer;font-size:13px;">↓</button>
-              <button onClick="{{ pe.onRemove }}" style="background:#1c1c24;border:none;color:#f46767;border-radius:7px;width:30px;height:30px;cursor:pointer;font-size:15px;">×</button>
+            <div style="padding:8px 0;border-top:1px solid #1c1c24;">
+              <div style="display:flex;align-items:center;gap:6px;">
+                <select value="{{ pe.name }}" onChange="{{ pe.onName }}" style="flex:1;min-width:0;background:#0a0a0e;border:1px solid #262630;border-radius:8px;color:#ece9e3;font-size:13px;font-weight:600;padding:8px;outline:none;cursor:pointer;">
+                  <sc-for list="{{ pe.lib }}" as="o" hint-placeholder-count="6"><option value="{{ o }}">{{ o }}</option></sc-for>
+                </select>
+                <button onClick="{{ pe.onUp }}" style="background:#1c1c24;border:none;color:#9a9790;border-radius:7px;width:28px;height:30px;cursor:pointer;font-size:12px;flex:none;">↑</button>
+                <button onClick="{{ pe.onDown }}" style="background:#1c1c24;border:none;color:#9a9790;border-radius:7px;width:28px;height:30px;cursor:pointer;font-size:12px;flex:none;">↓</button>
+                <button onClick="{{ pe.onRemove }}" style="background:#1c1c24;border:none;color:#f46767;border-radius:7px;width:28px;height:30px;cursor:pointer;font-size:14px;flex:none;">×</button>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;margin-top:6px;">
+                <div style="display:flex;align-items:center;gap:5px;"><span style="font-size:10px;font-family:'Space Mono',monospace;color:#5a5850;">SETS</span><input type="number" inputmode="numeric" value="{{ pe.sets }}" onInput="{{ pe.onSets }}" style="width:50px;background:#0a0a0e;border:1px solid #262630;border-radius:8px;color:#ece9e3;font-family:'Space Mono',monospace;font-weight:700;font-size:14px;padding:6px;outline:none;text-align:center;" /></div>
+                <input value="{{ pe.reps }}" onInput="{{ pe.onReps }}" placeholder="rep range" style="flex:1;min-width:0;background:#0a0a0e;border:1px solid #262630;border-radius:8px;color:#ece9e3;font-family:'Space Mono',monospace;font-size:13px;padding:7px 8px;outline:none;" />
+              </div>
+              <input value="{{ pe.prog }}" onInput="{{ pe.onProg }}" placeholder="progression rule — e.g. +2.5kg when 3x8" style="width:100%;margin-top:6px;background:#0a0a0e;border:1px solid #1c1c24;border-radius:8px;color:#9a9790;font-family:'Space Mono',monospace;font-size:11px;padding:6px 8px;outline:none;" />
             </div>
           </sc-for>
+          <button onClick="{{ d.onAddEx }}" style="width:100%;margin-top:10px;background:#0a0a0e;border:1px dashed #2c2c36;color:#c5f467;border-radius:9px;padding:9px;cursor:pointer;font-size:12px;font-weight:700;">+ Add exercise</button>
         </div>
       </sc-for>
+
+      <button onClick="{{ onAddDay }}" style="width:100%;background:#131318;border:1px solid #262630;color:#ece9e3;border-radius:12px;padding:12px;cursor:pointer;font-size:13px;font-weight:700;margin-bottom:14px;">+ Add training day</button>
+
+      <div style="background:#131318;border:1px solid #1c1c24;border-radius:16px;padding:14px;">
+        <div style="font-size:12px;font-weight:700;margin-bottom:8px;">Add a new exercise to your library</div>
+        <div style="display:flex;gap:6px;">
+          <input value="{{ newExName }}" onInput="{{ onNewExName }}" placeholder="Exercise name" style="flex:1;min-width:0;background:#0a0a0e;border:1px solid #262630;border-radius:8px;color:#ece9e3;font-size:13px;padding:9px;outline:none;" />
+          <select value="{{ newExMuscle }}" onChange="{{ onNewExMuscle }}" style="width:118px;background:#0a0a0e;border:1px solid #262630;border-radius:8px;color:#ece9e3;font-size:12px;padding:9px;outline:none;cursor:pointer;">
+            <sc-for list="{{ muscleOptions }}" as="m" hint-placeholder-count="8"><option value="{{ m }}">{{ m }}</option></sc-for>
+          </select>
+        </div>
+        <button onClick="{{ onAddNewExercise }}" style="width:100%;margin-top:8px;background:#c5f467;border:none;color:#0a0a0e;font-weight:700;border-radius:9px;padding:10px;cursor:pointer;font-size:13px;">Add to library</button>
+      </div>
     </div>
     </sc-if>
 
     <!-- ══════ COACH ══════ -->
     <sc-if value="{{ isCoach }}" hint-placeholder-val="{{ false }}">
     <div style="animation:wtUp .2s ease;">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;"><div style="font-size:11px;font-family:'Space Mono',monospace;color:#5a5850;">{{ coachSummary }}</div><button style="background:#c5f467;border:none;color:#0a0a0e;font-weight:700;font-size:12px;border-radius:10px;padding:9px 13px;cursor:pointer;">+ Assign plan</button></div>
-      <sc-for list="{{ clients }}" as="c" hint-placeholder-count="3">
-        <div style="background:#131318;border:1px solid {{ c.border }};border-radius:16px;padding:14px;margin-bottom:10px;">
-          <div style="display:flex;align-items:center;gap:12px;">
-            <div style="width:42px;height:42px;border-radius:12px;background:{{ c.avatarBg }};display:grid;place-items:center;font-weight:700;color:#0a0a0e;font-family:'Space Mono',monospace;">{{ c.initials }}</div>
-            <div style="flex:1;min-width:0;"><div style="font-size:15px;font-weight:700;">{{ c.name }}</div><div style="font-size:11px;font-family:'Space Mono',monospace;color:#5a5850;">{{ c.plan }}</div></div>
-            <span style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-family:'Space Mono',monospace;color:{{ c.flagColor }};background:{{ c.flagBg }};border-radius:7px;padding:5px 8px;">{{ c.flag }}</span>
-          </div>
-          <div style="display:flex;gap:8px;margin-top:12px;">
-            <div style="flex:1;background:#0a0a0e;border-radius:9px;padding:8px 10px;"><div style="font-size:9px;font-family:'Space Mono',monospace;color:#5a5850;text-transform:uppercase;">Adherence</div><div style="font-family:'Space Mono',monospace;font-weight:700;font-size:15px;color:{{ c.adhColor }};">{{ c.adherence }}</div></div>
-            <div style="flex:1;background:#0a0a0e;border-radius:9px;padding:8px 10px;"><div style="font-size:9px;font-family:'Space Mono',monospace;color:#5a5850;text-transform:uppercase;">Recovery</div><div style="font-family:'Space Mono',monospace;font-weight:700;font-size:15px;color:{{ c.recColor }};">{{ c.recovery }}</div></div>
-            <div style="flex:1;background:#0a0a0e;border-radius:9px;padding:8px 10px;"><div style="font-size:9px;font-family:'Space Mono',monospace;color:#5a5850;text-transform:uppercase;">Avg RPE</div><div style="font-family:'Space Mono',monospace;font-weight:700;font-size:15px;">{{ c.rpe }}</div></div>
-          </div>
-          <sc-if value="{{ c.hasNote }}" hint-placeholder-val="{{ false }}"><div style="margin-top:10px;font-size:12px;color:#9a9790;background:#0a0a0e;border-left:2px solid {{ c.flagColor }};border-radius:0 8px 8px 0;padding:8px 11px;line-height:1.4;">{{ c.note }}</div></sc-if>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;"><div style="font-size:11px;font-family:'Space Mono',monospace;color:#5a5850;">{{ coachSummary }}</div><button onClick="{{ goPlan }}" style="background:#c5f467;border:none;color:#0a0a0e;font-weight:700;font-size:12px;border-radius:10px;padding:9px 13px;cursor:pointer;">Manage plans →</button></div>
+      <div style="background:#131318;border:1px solid {{ self.border }};border-radius:16px;padding:14px;margin-bottom:10px;">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <div style="width:42px;height:42px;border-radius:12px;background:{{ self.avatarBg }};display:grid;place-items:center;font-weight:700;color:#0a0a0e;font-family:'Space Mono',monospace;">{{ self.initials }}</div>
+          <div style="flex:1;min-width:0;"><div style="font-size:15px;font-weight:700;">{{ self.name }}</div><div style="font-size:11px;font-family:'Space Mono',monospace;color:#5a5850;">{{ self.plan }}</div></div>
+          <span style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-family:'Space Mono',monospace;color:{{ self.flagColor }};background:{{ self.flagBg }};border-radius:7px;padding:5px 8px;">{{ self.flag }}</span>
         </div>
-      </sc-for>
+        <div style="display:flex;gap:8px;margin-top:12px;">
+          <div style="flex:1;background:#0a0a0e;border-radius:9px;padding:8px 10px;"><div style="font-size:9px;font-family:'Space Mono',monospace;color:#5a5850;text-transform:uppercase;">Adherence</div><div style="font-family:'Space Mono',monospace;font-weight:700;font-size:15px;color:{{ self.adhColor }};">{{ self.adherence }}</div></div>
+          <div style="flex:1;background:#0a0a0e;border-radius:9px;padding:8px 10px;"><div style="font-size:9px;font-family:'Space Mono',monospace;color:#5a5850;text-transform:uppercase;">Recovery</div><div style="font-family:'Space Mono',monospace;font-weight:700;font-size:15px;color:{{ self.recColor }};">{{ self.recovery }}</div></div>
+          <div style="flex:1;background:#0a0a0e;border-radius:9px;padding:8px 10px;"><div style="font-size:9px;font-family:'Space Mono',monospace;color:#5a5850;text-transform:uppercase;">Avg RPE</div><div style="font-family:'Space Mono',monospace;font-weight:700;font-size:15px;">{{ self.rpe }}</div></div>
+        </div>
+        <sc-if value="{{ self.hasNote }}" hint-placeholder-val="{{ false }}"><div style="margin-top:10px;font-size:12px;color:#9a9790;background:#0a0a0e;border-left:2px solid {{ self.flagColor }};border-radius:0 8px 8px 0;padding:8px 11px;line-height:1.4;">{{ self.note }}</div></sc-if>
+      </div>
+      <div style="text-align:center;color:#5a5850;font-size:11px;padding:6px 0;">Single-user mode · multi-client coaching is off.</div>
     </div>
     </sc-if>
 
@@ -411,47 +442,91 @@ const api = {
   async post(action, data={}) { if(!this._url) return null; const r=await fetch(this._url,{method:"POST",headers:{"Content-Type":"text/plain"},body:JSON.stringify({action,key:this._key,...data}),redirect:"follow"}); if(!r.ok) throw new Error("HTTP "+r.status); return r.json(); },
 };
 
-const MUSCLE_COLORS = { Chest:"#e74c3c",Back:"#3498db",Quads:"#2ecc71",Hamstrings:"#e67e22",Glutes:"#9b59b6",Shoulders:"#f1c40f",Biceps:"#1abc9c",Triceps:"#e84393",Core:"#fd79a8","Full Body":"#636e72",Conditioning:"#00b894",Recovery:"#74b9ff" };
-const LANDMARKS = { Chest:[10,22],Back:[10,22],Quads:[8,18],Hamstrings:[6,16],Glutes:[6,16],Shoulders:[8,22],Biceps:[8,20],Triceps:[6,18],Core:[0,20] };
+const MUSCLE_COLORS = { Chest:"#e74c3c",Back:"#3498db",Quads:"#2ecc71",Hamstrings:"#e67e22",Glutes:"#9b59b6",Shoulders:"#f1c40f",Biceps:"#1abc9c",Triceps:"#e84393",Core:"#fd79a8","Full Body":"#636e72",Conditioning:"#00b894",Recovery:"#74b9ff",Calves:"#00cec9" };
+const LANDMARKS = { Chest:[10,22],Back:[10,22],Quads:[8,18],Hamstrings:[6,16],Glutes:[6,16],Shoulders:[8,22],Biceps:[8,20],Triceps:[6,18],Core:[0,20],Calves:[6,16] };
 
 const DEMO_EXERCISES = [
   {ExerciseName:"Barbell Bench Press",MuscleGroup:"Chest",Equipment:"Barbell",DefaultCue:"Retract scapula, feet planted."},
-  {ExerciseName:"Incline DB Bench",MuscleGroup:"Chest",Equipment:"Dumbbells",DefaultCue:"Low incline 30°."},
-  {ExerciseName:"TRX Fly / Push-ups",MuscleGroup:"Chest",Equipment:"TRX",DefaultCue:"Controlled stretch."},
-  {ExerciseName:"Lateral Raises",MuscleGroup:"Shoulders",Equipment:"Dumbbells",DefaultCue:"Soft elbows."},
-  {ExerciseName:"Shoulder Prehab",MuscleGroup:"Shoulders",Equipment:"Band",DefaultCue:"External rotations."},
-  {ExerciseName:"Back Squat",MuscleGroup:"Quads",Equipment:"Barbell",DefaultCue:"Brace core."},
-  {ExerciseName:"Romanian Deadlift",MuscleGroup:"Hamstrings",Equipment:"Barbell",DefaultCue:"Hinge at hips."},
-  {ExerciseName:"Goblet Squat",MuscleGroup:"Quads",Equipment:"Dumbbell",DefaultCue:"Upright torso."},
+  {ExerciseName:"Incline DB Bench",MuscleGroup:"Chest",Equipment:"Dumbbells",DefaultCue:"Low incline 30°. Focus on stretch."},
+  {ExerciseName:"TRX Fly / Push-ups",MuscleGroup:"Chest",Equipment:"TRX / Bodyweight",DefaultCue:"Controlled stretch, no strain."},
+  {ExerciseName:"Knee Push-ups on Grips",MuscleGroup:"Chest",Equipment:"Push-up Grips",DefaultCue:"Full range, controlled negative."},
+  {ExerciseName:"Lateral Raises",MuscleGroup:"Shoulders",Equipment:"Dumbbells",DefaultCue:"Soft elbows, raise to shoulder height."},
+  {ExerciseName:"Shoulder Prehab",MuscleGroup:"Shoulders",Equipment:"Band / Cable",DefaultCue:"External rotations / face pulls."},
+  {ExerciseName:"Back Squat",MuscleGroup:"Quads",Equipment:"Barbell",DefaultCue:"Brace core, drive with mid-foot."},
+  {ExerciseName:"Romanian Deadlift",MuscleGroup:"Hamstrings",Equipment:"Barbell",DefaultCue:"Hinge at hips, feel hamstrings."},
+  {ExerciseName:"Goblet Squat",MuscleGroup:"Quads",Equipment:"Dumbbell / Kettlebell",DefaultCue:"Upright torso, quad focus."},
   {ExerciseName:"TRX Hamstring Curls",MuscleGroup:"Hamstrings",Equipment:"TRX",DefaultCue:"Slow eccentric."},
-  {ExerciseName:"Bent-over Row",MuscleGroup:"Back",Equipment:"Barbell",DefaultCue:"Pull to ribs."},
-  {ExerciseName:"Pull-ups / TRX Rows",MuscleGroup:"Back",Equipment:"Bodyweight",DefaultCue:"Scapula down/back."},
+  {ExerciseName:"Bent-over Row",MuscleGroup:"Back",Equipment:"Barbell",DefaultCue:"Pull elbows to ribs, tight core."},
+  {ExerciseName:"Pull-ups / TRX Rows",MuscleGroup:"Back",Equipment:"Bodyweight / TRX",DefaultCue:"Scapula down/back."},
   {ExerciseName:"Single-arm DB Row",MuscleGroup:"Back",Equipment:"Dumbbell",DefaultCue:"Pull toward hip."},
-  {ExerciseName:"Face Pulls",MuscleGroup:"Shoulders",Equipment:"Cable",DefaultCue:"High elbows."},
-  {ExerciseName:"Biceps Curls",MuscleGroup:"Biceps",Equipment:"Dumbbells",DefaultCue:"Full range."},
-  {ExerciseName:"Deadlift",MuscleGroup:"Hamstrings",Equipment:"Barbell",DefaultCue:"Neutral spine."},
-  {ExerciseName:"Bulgarian Split Squat",MuscleGroup:"Quads",Equipment:"Dumbbells",DefaultCue:"Knee forward."},
-  {ExerciseName:"Hip Thrust",MuscleGroup:"Glutes",Equipment:"Barbell",DefaultCue:"Glute squeeze."},
-  {ExerciseName:"Kettlebell Swings",MuscleGroup:"Hamstrings",Equipment:"Kettlebell",DefaultCue:"Explosive hinge."},
+  {ExerciseName:"Face Pulls",MuscleGroup:"Shoulders",Equipment:"Cable / Band",DefaultCue:"High elbows, squeeze."},
+  {ExerciseName:"Biceps Curls",MuscleGroup:"Biceps",Equipment:"Dumbbells",DefaultCue:"Full range, no swinging."},
+  {ExerciseName:"Incline Biceps Curls",MuscleGroup:"Biceps",Equipment:"Dumbbells",DefaultCue:"Full stretch at bottom."},
+  {ExerciseName:"Deadlift",MuscleGroup:"Hamstrings",Equipment:"Barbell",DefaultCue:"Neutral spine, push floor away."},
+  {ExerciseName:"Bulgarian Split Squat",MuscleGroup:"Quads",Equipment:"Dumbbells / Bodyweight",DefaultCue:"Knee forward, upright."},
+  {ExerciseName:"TRX Bulgarian Split Squat",MuscleGroup:"Quads",Equipment:"TRX",DefaultCue:"Knee forward, controlled."},
+  {ExerciseName:"Hip Thrust",MuscleGroup:"Glutes",Equipment:"Barbell / Machine",DefaultCue:"Glute squeeze at top."},
+  {ExerciseName:"Kettlebell Swings",MuscleGroup:"Hamstrings",Equipment:"Kettlebell",DefaultCue:"Hip hinge, explosive."},
+  {ExerciseName:"Primer Exercise",MuscleGroup:"Full Body",Equipment:"Various",DefaultCue:"Light movement prep."},
+  {ExerciseName:"Freeletics Workout",MuscleGroup:"Conditioning",Equipment:"Bodyweight",DefaultCue:"Follow app."},
+  {ExerciseName:"Conditioning Notes",MuscleGroup:"Conditioning",Equipment:"Various",DefaultCue:"Track performance."},
+  {ExerciseName:"Cooldown & Mobility",MuscleGroup:"Recovery",Equipment:"None",DefaultCue:"Stretch / breathing."},
+  {ExerciseName:"Overhead Press DB",MuscleGroup:"Shoulders",Equipment:"Dumbbells",DefaultCue:"Seated upright, weight slightly in front of shoulders."},
+  {ExerciseName:"Skull Crusher DB",MuscleGroup:"Triceps",Equipment:"Dumbbells",DefaultCue:"Lying down, lower DBs next to head, full range."},
+  {ExerciseName:"Calf Raises",MuscleGroup:"Calves",Equipment:"Dumbbells",DefaultCue:"Full range, pause at top."},
+  {ExerciseName:"Weighted Planks",MuscleGroup:"Core",Equipment:"Weights",DefaultCue:"Brace, neutral spine."},
 ];
-const DEMO_PLAN = {PlanID:"P1",PlanName:"5-Day Push/Pull/Legs Hybrid",IsActive:"TRUE"};
+const DEMO_PLANS = [
+  {PlanID:"P1",PlanName:"5-Day Push/Pull/Legs Hybrid",IsActive:false},
+  {PlanID:"P2",PlanName:"5-Day 2-1-2 Push/Pull",IsActive:true},
+];
 const DEMO_PE = [
-  ["P1-01",1,"MON","Upper Push",1,"Barbell Bench Press",5,"5-8 reps","+2.5kg when 5x8"],
-  ["P1-02",1,"MON","Upper Push",2,"Incline DB Bench",3,"8-12 reps","+2kg when 3x12"],
-  ["P1-03",1,"MON","Upper Push",3,"Lateral Raises",3,"12-20 reps","+1kg when 3x20"],
-  ["P1-04",1,"MON","Upper Push",4,"Shoulder Prehab",3,"12-15 reps",""],
-  ["P1-05",2,"TUE","Lower 1",1,"Back Squat",5,"5 reps","+2.5kg when 5x5"],
-  ["P1-06",2,"TUE","Lower 1",2,"Romanian Deadlift",3,"6-8 reps","+2.5kg when 3x8"],
-  ["P1-07",2,"TUE","Lower 1",3,"Goblet Squat",3,"12-15 reps","+2kg when 3x15"],
-  ["P1-08",3,"WED","Upper Pull",1,"Bent-over Row",5,"5-8 reps","+2.5kg when 5x8"],
-  ["P1-09",3,"WED","Upper Pull",2,"Pull-ups / TRX Rows",3,"Max reps","+1 rep"],
-  ["P1-10",3,"WED","Upper Pull",3,"Single-arm DB Row",3,"8-12 reps","+2kg when 3x12"],
-  ["P1-11",3,"WED","Upper Pull",4,"Biceps Curls",3,"10-15 reps","+2kg when 3x15"],
-  ["P1-12",4,"THU","Lower 2",1,"Deadlift",5,"3-5 reps","+2.5kg when 5x5"],
-  ["P1-13",4,"THU","Lower 2",2,"Bulgarian Split Squat",3,"8-10 reps","+2kg when 3x10"],
-  ["P1-14",4,"THU","Lower 2",3,"Hip Thrust",3,"8-12 reps","+5kg when 3x12"],
-  ["P1-15",4,"THU","Lower 2",4,"Kettlebell Swings",3,"20-25 reps","+2kg when 3x25"],
-].map(a=>({PlanExerciseID:a[0],PlanID:"P1",DayNumber:a[1],DayLabel:a[2],DayName:a[3],SortOrder:a[4],ExerciseName:a[5],TargetSets:a[6],TargetReps:a[7],ProgressionRule:a[8]}));
+  // P1 — 5-Day Push/Pull/Legs Hybrid (inactive)
+  ["P1-01","P1",1,"MON","Upper Push",1,"Barbell Bench Press",5,"5-8 reps","+2.5kg when 5x8"],
+  ["P1-02","P1",1,"MON","Upper Push",2,"Incline DB Bench",3,"8-12 reps","+2kg when 3x12"],
+  ["P1-03","P1",1,"MON","Upper Push",3,"TRX Fly / Push-ups",3,"10-15 reps","+1 rep"],
+  ["P1-04","P1",1,"MON","Upper Push",4,"Lateral Raises",3,"12-20 reps","+1kg when 3x20"],
+  ["P1-05","P1",1,"MON","Upper Push",5,"Shoulder Prehab",3,"12-15 reps",""],
+  ["P1-06","P1",2,"TUE","Lower 1",1,"Back Squat",5,"5 reps","+2.5kg when 5x5"],
+  ["P1-07","P1",2,"TUE","Lower 1",2,"Romanian Deadlift",3,"6-8 reps","+2.5kg when 3x8"],
+  ["P1-08","P1",2,"TUE","Lower 1",3,"Goblet Squat",3,"12-15 reps","+2kg when 3x15"],
+  ["P1-09","P1",2,"TUE","Lower 1",4,"TRX Hamstring Curls",3,"12-20 reps","+1 rep"],
+  ["P1-10","P1",3,"WED","Upper Pull",1,"Bent-over Row",5,"5-8 reps","+2.5kg when 5x8"],
+  ["P1-11","P1",3,"WED","Upper Pull",2,"Pull-ups / TRX Rows",3,"Max reps","+1 rep"],
+  ["P1-12","P1",3,"WED","Upper Pull",3,"Single-arm DB Row",3,"8-12 reps","+2kg when 3x12"],
+  ["P1-13","P1",3,"WED","Upper Pull",4,"Face Pulls",3,"15-20 reps","+1kg when 3x20"],
+  ["P1-14","P1",3,"WED","Upper Pull",5,"Biceps Curls",3,"10-15 reps","+2kg when 3x15"],
+  ["P1-15","P1",4,"THU","Lower 2",1,"Deadlift",5,"3-5 reps","+2.5kg when 5x5"],
+  ["P1-16","P1",4,"THU","Lower 2",2,"Bulgarian Split Squat",3,"8-10 reps","+2kg when 3x10"],
+  ["P1-17","P1",4,"THU","Lower 2",3,"Hip Thrust",3,"8-12 reps","+5kg when 3x12"],
+  ["P1-18","P1",4,"THU","Lower 2",4,"Kettlebell Swings",3,"20-25 reps","+2kg when 3x25"],
+  ["P1-19","P1",5,"FRI","Hybrid",1,"Primer Exercise",3,"10-12 reps",""],
+  ["P1-20","P1",5,"FRI","Hybrid",2,"Freeletics Workout",1,"As prescribed",""],
+  ["P1-21","P1",5,"FRI","Hybrid",3,"Conditioning Notes",1,"Time / Rounds",""],
+  ["P1-22","P1",5,"FRI","Hybrid",4,"Cooldown & Mobility",1,"—",""],
+  // P2 — 5-Day 2-1-2 Push/Pull (active)
+  ["P2-01","P2",1,"MON","Upper Push",1,"Barbell Bench Press",3,"5-8 reps","+2.5kg when 3x8"],
+  ["P2-02","P2",1,"MON","Upper Push",2,"Incline DB Bench",3,"8-10 reps","+2kg when 3x10"],
+  ["P2-03","P2",1,"MON","Upper Push",3,"Overhead Press DB",3,"8-10 reps","+2kg when 3x10"],
+  ["P2-04","P2",1,"MON","Upper Push",4,"Lateral Raises",3,"15-20 reps","+1kg when 3x20"],
+  ["P2-05","P2",1,"MON","Upper Push",5,"Skull Crusher DB",3,"12-15 reps","+1kg when 3x15"],
+  ["P2-06","P2",2,"TUE","Lower 1",1,"Back Squat",3,"5-8 reps","+2.5kg when 3x8"],
+  ["P2-07","P2",2,"TUE","Lower 1",2,"Romanian Deadlift",3,"8-10 reps","+2.5kg when 3x10"],
+  ["P2-08","P2",2,"TUE","Lower 1",3,"Goblet Squat",3,"10-12 reps","+2kg when 3x12"],
+  ["P2-09","P2",2,"TUE","Lower 1",4,"TRX Hamstring Curls",3,"12-15 reps","+1 rep"],
+  ["P2-10","P2",2,"TUE","Lower 1",5,"Calf Raises",4,"15 reps","+2kg when 4x15"],
+  ["P2-11","P2",3,"WED","Active Recovery",1,"Cooldown & Mobility",1,"30-45min",""],
+  ["P2-12","P2",4,"THU","Upper Pull",1,"Pull-ups / TRX Rows",3,"6-8 reps","+1 rep"],
+  ["P2-13","P2",4,"THU","Upper Pull",2,"Bent-over Row",3,"8-10 reps","+2.5kg when 3x10"],
+  ["P2-14","P2",4,"THU","Upper Pull",3,"Face Pulls",3,"15-20 reps","+1kg when 3x20"],
+  ["P2-15","P2",4,"THU","Upper Pull",4,"Single-arm DB Row",3,"10-12 reps","+2kg when 3x12"],
+  ["P2-16","P2",4,"THU","Upper Pull",5,"Biceps Curls",3,"12-15 reps","+2kg when 3x15"],
+  ["P2-17","P2",5,"FRI","Lower 2",1,"Deadlift",3,"3-5 reps","+2.5kg when 3x5"],
+  ["P2-18","P2",5,"FRI","Lower 2",2,"Bulgarian Split Squat",3,"8-10 reps (ea)","+2kg when 3x10"],
+  ["P2-19","P2",5,"FRI","Lower 2",3,"Goblet Squat",3,"12-15 reps","+2kg when 3x15"],
+  ["P2-20","P2",5,"FRI","Lower 2",4,"TRX Hamstring Curls",3,"15-20 reps","+1 rep"],
+  ["P2-21","P2",5,"FRI","Lower 2",5,"Weighted Planks",3,"60 sec",""],
+].map(a=>({PlanExerciseID:a[0],PlanID:a[1],DayNumber:a[2],DayLabel:a[3],DayName:a[4],SortOrder:a[5],ExerciseName:a[6],TargetSets:a[7],TargetReps:a[8],ProgressionRule:a[9]}));
 
 function mkLog(date,day,ex,sets,note,week,block){ const l={LogID:Math.random().toString(36).slice(2,9),Date:date,PlanID:"P1",DayNumber:day,ExerciseName:ex,RPE:"",Note:note||"",Week:week,Block:block}; sets.forEach((s,i)=>{l["S"+(i+1)+"Reps"]=s[0];l["S"+(i+1)+"Weight"]=s[1];}); return l; }
 const DEMO_LOG = [
@@ -485,11 +560,7 @@ const ICONS = {
   plan:'<svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="CUR" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3.5" width="14" height="18" rx="2.5"/><path d="M9 3.5V6h6V3.5M9 11h6M9 15h4"/></svg>',
   coach:'<svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="CUR" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c0-3.5 3-6 7-6s7 2.5 7 6"/></svg>',
 };
-const DEMO_CLIENTS = [
-  {initials:"SV",name:"Steffen V.",plan:"Push/Pull/Legs · Blk 3 Wk 4",avatarBg:"linear-gradient(135deg,#f46767,#c0392b)",border:"#2a1717",flag:"↓ 2 regressions",flagColor:"#f46767",flagBg:"rgba(244,103,103,.12)",adherence:"67%",adhColor:"#f4a867",recovery:"41%",recColor:"#f46767",rpe:"9.2",hasNote:true,note:"Recovery low + RPE climbing → suggest deload next week."},
-  {initials:"MK",name:"Maria K.",plan:"Upper/Lower · Blk 1 Wk 5",avatarBg:"linear-gradient(135deg,#67a8f4,#2980b9)",border:"#1c1c24",flag:"↑ On track",flagColor:"#67f4a8",flagBg:"rgba(103,244,168,.12)",adherence:"100%",adhColor:"#67f4a8",recovery:"78%",recColor:"#67f4a8",rpe:"7.4",hasNote:false,note:""},
-  {initials:"JD",name:"Jonas D.",plan:"5-Day Hybrid · Blk 3 Wk 1",avatarBg:"linear-gradient(135deg,#f4a867,#e67e22)",border:"#1c1c24",flag:"→ 1 missed",flagColor:"#f4a867",flagBg:"rgba(244,168,103,.12)",adherence:"83%",adhColor:"#f4a867",recovery:"72%",recColor:"#67f4a8",rpe:"8.0",hasNote:false,note:""},
-];
+// (multi-client roster removed — single-user self view)
 
 class Component extends DCLogic {
   constructor(props){
@@ -497,7 +568,7 @@ class Component extends DCLogic {
     const url=LS.get("apiUrl",""), key=LS.get("apiKey","");
     this.state = {
       view:"log", settingsOpen:false, readinessOpen:false, reviewOpen:false,
-      exercises:DEMO_EXERCISES, activePlan:DEMO_PLAN, planExercises:DEMO_PE,
+      exercises:LS.getJSON("exercises",DEMO_EXERCISES), plans:LS.getJSON("plans",DEMO_PLANS), planExercises:LS.getJSON("planExercises",DEMO_PE),
       logs:LS.getJSON("logs",DEMO_LOG),
       activeDay:1, draft:{}, rpe:{}, note:"",
       block:Number(LS.get("block","3"))||3, week:Number(LS.get("week","4"))||4,
@@ -505,7 +576,7 @@ class Component extends DCLogic {
       rest:{active:false,remaining:0},
       toast:"", prBanner:"",
       readinessMap:LS.getJSON("readiness",{}), rdDraft:{sleep:3,soreness:3,energy:3},
-      progressEx:"Barbell Bench Press",
+      progressEx:"Barbell Bench Press", newExName:"", newExMuscle:"Chest",
       openWeek:null,
       apiUrl:url, apiKey:key, showToken:false,
       units:LS.get("units","kg"), defaultRest:Number(LS.get("defaultRest","90"))||90,
@@ -527,9 +598,8 @@ class Component extends DCLogic {
       api.setUrl(url); api.setKey(key);
       const data=await api.get("init");
       if(data&&data.ok){
-        this.setState({ exercises:data.exercises||DEMO_EXERCISES, synced:true });
-        if(data.activePlan)this.setState({activePlan:data.activePlan});
-        if(data.planExercises&&data.planExercises.length)this.setState({planExercises:data.planExercises});
+        this.setState({ exercises:data.exercises||this.state.exercises, synced:true });
+        if(data.activePlan){ const ap=data.activePlan; this.setState(s=>{ let plans=s.plans.map(p=>({...p,IsActive:p.PlanID===ap.PlanID})); if(!plans.some(p=>p.PlanID===ap.PlanID))plans=[...plans,{PlanID:ap.PlanID,PlanName:ap.PlanName,IsActive:true}]; let planExercises=s.planExercises; if(data.planExercises&&data.planExercises.length){ planExercises=[...s.planExercises.filter(x=>x.PlanID!==ap.PlanID),...data.planExercises]; } return {plans,planExercises}; },()=>this.persistPlan()); }
       }
       const hist=await api.get("history",{limit:"500"});
       if(hist&&hist.ok&&hist.sessions){
@@ -541,10 +611,20 @@ class Component extends DCLogic {
     }catch(err){ this.flash("Sync failed: "+err.message); }
   }
   persist(){ const s=this.state; LS.setJSON("logs",s.logs); LS.set("block",String(s.block)); LS.set("week",String(s.week)); LS.set("sessions",String(s.sessionsDone)); }
+  persistPlan(){ const s=this.state; LS.setJSON("plans",s.plans); LS.setJSON("planExercises",s.planExercises); LS.setJSON("exercises",s.exercises); }
+  activePlan(){ const s=this.state; return s.plans.find(p=>p.IsActive)||s.plans[0]||{PlanID:"",PlanName:"No plan"}; }
+  activePE(){ const id=this.activePlan().PlanID; return this.state.planExercises.filter(pe=>pe.PlanID===id); }
+  setActivePlan(id){ this.setState(s=>({plans:s.plans.map(p=>({...p,IsActive:p.PlanID===id})),activeDay:1,draft:{}}),()=>{ this.persistPlan(); this.prefillDraft(1,true); this.flash("Switched to "+this.activePlan().PlanName); }); }
+  editPe(id,field,val){ this.setState(s=>({planExercises:s.planExercises.map(p=>p.PlanExerciseID===id?{...p,[field]:(field==="TargetSets"?(Number(val)||0):val)}:p)}),()=>{ this.persistPlan(); if(field==="TargetSets"||field==="ExerciseName")this.prefillDraft(this.state.activeDay,true); }); }
+  addPeToDay(dayNum){ this.setState(s=>{ const id=this.activePlan().PlanID; const dayEx=s.planExercises.filter(p=>p.PlanID===id&&p.DayNumber===dayNum); const meta=dayEx[0]||{DayLabel:"DAY",DayName:"New Day"}; const maxSo=dayEx.reduce((m,p)=>Math.max(m,Number(p.SortOrder)||0),0); const first=(s.exercises[0]||{}).ExerciseName||""; const pe={PlanExerciseID:uid(),PlanID:id,DayNumber:dayNum,DayLabel:meta.DayLabel,DayName:meta.DayName,SortOrder:maxSo+1,ExerciseName:first,TargetSets:3,TargetReps:"8-12 reps",ProgressionRule:""}; return {planExercises:[...s.planExercises,pe]}; },()=>{this.persistPlan();this.flash("Exercise added");}); }
+  addDay(){ this.setState(s=>{ const id=this.activePlan().PlanID; const days=[...new Set(s.planExercises.filter(p=>p.PlanID===id).map(p=>Number(p.DayNumber)))]; const n=(days.length?Math.max(...days):0)+1; const first=(s.exercises[0]||{}).ExerciseName||""; const pe={PlanExerciseID:uid(),PlanID:id,DayNumber:n,DayLabel:"DAY "+n,DayName:"New Day",SortOrder:1,ExerciseName:first,TargetSets:3,TargetReps:"8-12 reps",ProgressionRule:""}; return {planExercises:[...s.planExercises,pe]}; },()=>{this.persistPlan();this.flash("Day added");}); }
+  removeDay(dayNum){ this.setState(s=>{ const id=this.activePlan().PlanID; return {planExercises:s.planExercises.filter(p=>!(p.PlanID===id&&Number(p.DayNumber)===Number(dayNum)))}; },()=>{this.persistPlan();this.flash("Day removed");}); }
+  editDay(dayNum,field,val){ this.setState(s=>{ const id=this.activePlan().PlanID; return {planExercises:s.planExercises.map(p=>(p.PlanID===id&&Number(p.DayNumber)===Number(dayNum))?{...p,[field]:val}:p)}; },()=>this.persistPlan()); }
+  addNewExercise(){ const name=(this.state.newExName||"").trim(); if(!name){ this.flash("Enter an exercise name"); return; } if(this.state.exercises.some(e=>e.ExerciseName.toLowerCase()===name.toLowerCase())){ this.flash("Already in library"); return; } this.setState(s=>({exercises:[...s.exercises,{ExerciseName:name,MuscleGroup:s.newExMuscle,Equipment:"",DefaultCue:""}],newExName:""}),()=>{this.persistPlan();this.flash(name+" added");}); }
   flash(m){ clearTimeout(this._toastT); this.setState({toast:m}); this._toastT=setTimeout(()=>this.setState({toast:""}),2400); }
   celebrate(m){ clearTimeout(this._prT); this.setState({prBanner:m}); this._prT=setTimeout(()=>this.setState({prBanner:""}),3400); }
 
-  daysMap(){ const d={}; this.state.planExercises.forEach(pe=>{ if(!d[pe.DayNumber])d[pe.DayNumber]={num:pe.DayNumber,label:pe.DayLabel,name:pe.DayName,exercises:[]}; d[pe.DayNumber].exercises.push(pe); }); Object.values(d).forEach(x=>x.exercises.sort((a,b)=>a.SortOrder-b.SortOrder)); return d; }
+  daysMap(){ const d={}; this.activePE().forEach(pe=>{ if(!d[pe.DayNumber])d[pe.DayNumber]={num:pe.DayNumber,label:pe.DayLabel,name:pe.DayName,exercises:[]}; d[pe.DayNumber].exercises.push(pe); }); Object.values(d).forEach(x=>x.exercises.sort((a,b)=>a.SortOrder-b.SortOrder)); return d; }
   dayList(){ return Object.values(this.daysMap()).sort((a,b)=>a.num-b.num); }
   lastSession(name){ const es=this.state.logs.filter(l=>l.ExerciseName===name).sort((a,b)=>b.Date.localeCompare(a.Date)); return es.length?extractSets(es[0]):null; }
   scoreOf(rd){ if(!rd)return 0; return Math.round((Number(rd.sleep)+Number(rd.energy)+Number(rd.soreness))/3*2); }
@@ -567,7 +647,7 @@ class Component extends DCLogic {
     const s=this.state; const day=this.daysMap()[s.activeDay]; if(!day)return;
     const entries=[]; const prs=[];
     day.exercises.forEach(pe=>{ const dr=s.draft[pe.ExerciseName]; if(!dr||!dr.some(x=>x&&(x.reps||x.weight)))return;
-      const e={LogID:uid(),Date:todayStr(),PlanID:s.activePlan.PlanID,DayNumber:s.activeDay,ExerciseName:pe.ExerciseName,RPE:s.rpe[pe.ExerciseName]||"",Note:s.note,Week:s.week,Block:s.block};
+      const e={LogID:uid(),Date:todayStr(),PlanID:this.activePlan().PlanID,DayNumber:s.activeDay,ExerciseName:pe.ExerciseName,RPE:s.rpe[pe.ExerciseName]||"",Note:s.note,Week:s.week,Block:s.block};
       dr.forEach((x,i)=>{ if(x){ e["S"+(i+1)+"Reps"]=Number(x.reps)||0; e["S"+(i+1)+"Weight"]=Number(x.weight)||0; } });
       const priorBest=Math.max(0,...s.logs.filter(l=>l.ExerciseName===pe.ExerciseName).map(e1rmOf));
       if(e1rmOf(e)>priorBest+0.5 && priorBest>0) prs.push(pe.ExerciseName+" · "+Math.round(topWeight(e))+s.units);
@@ -592,10 +672,10 @@ class Component extends DCLogic {
   incWeek(){ this.setState(s=>({week:s.week+1}),()=>this.persist()); }
   decWeek(){ this.setState(s=>({week:Math.max(1,s.week-1)}),()=>this.persist()); }
 
-  movePe(id,dir){ this.setState(s=>{ const pe=s.planExercises.find(p=>p.PlanExerciseID===id); if(!pe)return{}; const dayEx=s.planExercises.filter(p=>p.DayNumber===pe.DayNumber).sort((a,b)=>a.SortOrder-b.SortOrder); const idx=dayEx.findIndex(p=>p.PlanExerciseID===id); const sw=idx+dir; if(sw<0||sw>=dayEx.length)return{}; const other=dayEx[sw]; return {planExercises:s.planExercises.map(p=>{ if(p.PlanExerciseID===pe.PlanExerciseID)return{...p,SortOrder:other.SortOrder}; if(p.PlanExerciseID===other.PlanExerciseID)return{...p,SortOrder:pe.SortOrder}; return p; })}; }); }
-  removePe(id){ this.setState(s=>({planExercises:s.planExercises.filter(p=>p.PlanExerciseID!==id)})); this.flash("Removed"); }
+  movePe(id,dir){ this.setState(s=>{ const pe=s.planExercises.find(p=>p.PlanExerciseID===id); if(!pe)return{}; const dayEx=s.planExercises.filter(p=>p.PlanID===pe.PlanID&&p.DayNumber===pe.DayNumber).sort((a,b)=>a.SortOrder-b.SortOrder); const idx=dayEx.findIndex(p=>p.PlanExerciseID===id); const sw=idx+dir; if(sw<0||sw>=dayEx.length)return{}; const other=dayEx[sw]; return {planExercises:s.planExercises.map(p=>{ if(p.PlanExerciseID===pe.PlanExerciseID)return{...p,SortOrder:other.SortOrder}; if(p.PlanExerciseID===other.PlanExerciseID)return{...p,SortOrder:pe.SortOrder}; return p; })}; },()=>this.persistPlan()); }
+  removePe(id){ this.setState(s=>({planExercises:s.planExercises.filter(p=>p.PlanExerciseID!==id)}),()=>this.persistPlan()); this.flash("Removed"); }
 
-  copyWhoop(idx){ const w=this.calendarWeeks()[idx]; if(!w)return; const lines=[]; lines.push("Strength week — Block "+w.block+" · Week "+w.week+" ("+w.dates[0]+(w.dates.length>1?" to "+w.dates[w.dates.length-1]:"")+")"); lines.push("Plan: "+(this.state.activePlan.PlanName||"")); lines.push(""); w.days.forEach(dd=>{ lines.push(dd.title); dd.entries.forEach(en=>lines.push(" • "+en.name+": "+en.setsRaw)); lines.push(""); }); lines.push("Totals: "+w.sessionCount+" sessions · "+Math.round(w.vol)+w2s(this.state.units)+" volume"); lines.push("RPE & recovery: integrate with today's Whoop strain/recovery to recommend adjustments."); const str=lines.join("\n"); try{ navigator.clipboard.writeText(str); this.flash("Whoop summary copied"); }catch(e){ this.flash("Copy unavailable"); } }
+  copyWhoop(idx){ const w=this.calendarWeeks()[idx]; if(!w)return; const lines=[]; lines.push("Strength week — Block "+w.block+" · Week "+w.week+" ("+w.dates[0]+(w.dates.length>1?" to "+w.dates[w.dates.length-1]:"")+")"); lines.push("Plan: "+(this.activePlan().PlanName||"")); lines.push(""); w.days.forEach(dd=>{ lines.push(dd.title); dd.entries.forEach(en=>lines.push(" • "+en.name+": "+en.setsRaw)); lines.push(""); }); lines.push("Totals: "+w.sessionCount+" sessions · "+Math.round(w.vol)+w2s(this.state.units)+" volume"); lines.push("RPE & recovery: integrate with today's Whoop strain/recovery to recommend adjustments."); const str=lines.join("\n"); try{ navigator.clipboard.writeText(str); this.flash("Whoop summary copied"); }catch(e){ this.flash("Copy unavailable"); } }
 
   calendarWeeks(){ const logs=[...this.state.logs].sort((a,b)=>a.Date.localeCompare(b.Date)); const by={}; logs.forEach(l=>{ const k=(l.PlanID||"?")+"::"+(Number(l.Block)||1)+"::"+(Number(l.Week)||1); (by[k]=by[k]||[]).push(l); }); const res=[]; Object.entries(by).forEach(([k,ls])=>{ const [,bl,wk]=k.split("::"); const dmap={}; const dates=new Set(); let vol=0; ls.forEach(l=>{ dates.add(l.Date); vol+=totalVol(l); if(!dmap[l.DayNumber])dmap[l.DayNumber]={dayNumber:l.DayNumber,date:l.Date,entries:[]}; const prevLogs=logs.filter(x=>x.ExerciseName===l.ExerciseName&&x.Date<l.Date); const prev=prevLogs.length?{top:topWeight(prevLogs[prevLogs.length-1]),vol:totalVol(prevLogs[prevLogs.length-1])}:null; const trend=classifyTrend({top:topWeight(l),vol:totalVol(l)},prev); const sets=extractSets(l); dmap[l.DayNumber].entries.push({name:l.ExerciseName,trend,setsRaw:sets.map(x=>x.reps+"×"+x.weight+(this.state.units)).join(", ")}); }); const dd=Object.values(dmap).sort((a,b)=>a.date.localeCompare(b.date)); res.push({block:Number(bl),week:Number(wk),dates:[...dates].sort(),vol,sessionCount:dd.length,days:dd}); }); res.sort((a,b)=>a.dates[0].localeCompare(b.dates[0])); return res.reverse(); }
 
@@ -620,7 +700,7 @@ class Component extends DCLogic {
 
     // header
     const hdrTitle=activeDay?activeDay.name:"Workout";
-    const hdrSub=s.activePlan?(s.activePlan.PlanName.length>22?s.activePlan.PlanName.slice(0,22)+"…":s.activePlan.PlanName):"No plan";
+    const ap=this.activePlan(); const hdrSub=ap.PlanName.length>22?ap.PlanName.slice(0,22)+"…":ap.PlanName;
 
     // readiness vm
     const rdScore= rdToday? this.scoreOf(rdToday) : 0;
@@ -678,8 +758,24 @@ class Component extends DCLogic {
     const weeks=this.calendarWeeks().map((w,idx)=>({ title:"Block "+w.block+" · Week "+w.week, meta:w.dates[0]+(w.dates.length>1?" → "+w.dates[w.dates.length-1]:"")+" · "+w.sessionCount+" sessions", vol:Math.round(w.vol)+U, open:s.openWeek===idx, onToggle:()=>this.setState(st=>({openWeek:st.openWeek===idx?null:idx})), onCopy:()=>this.copyWhoop(idx), days:w.days.map(dd=>{ const dm=daysMap[dd.dayNumber]; return { title:(dm?dm.label+" · "+dm.name:"Day "+dd.dayNumber)+"  "+dd.date, entries:dd.entries.map(en=>({ name:en.name, trendColor:TREND[en.trend].c, sets:en.setsRaw })) }; }) }));
 
     // plan
-    const planDays=dayList.map(d=>({ label:d.label, name:d.name, exercises:d.exercises.map(pe=>({ name:pe.ExerciseName, target:pe.TargetSets+"×"+(pe.TargetReps||"")+(pe.ProgressionRule?" · "+pe.ProgressionRule:""), onUp:()=>this.movePe(pe.PlanExerciseID,-1), onDown:()=>this.movePe(pe.PlanExerciseID,1), onRemove:()=>this.removePe(pe.PlanExerciseID) })) }));
+    const libraryOptions=s.exercises.map(e=>e.ExerciseName);
+    const muscleOptions=Object.keys(MUSCLE_COLORS);
+    const planOptions=s.plans.map(p=>({ id:p.PlanID, label:p.PlanName+(p.IsActive?" · active":"") }));
+    const planDays=dayList.map(d=>({ label:d.label, name:d.name, onLabel:(e)=>this.editDay(d.num,"DayLabel",e.target.value), onName:(e)=>this.editDay(d.num,"DayName",e.target.value), onAddEx:()=>this.addPeToDay(d.num), onRemoveDay:()=>this.removeDay(d.num), exercises:d.exercises.map(pe=>({ name:pe.ExerciseName, sets:String(pe.TargetSets||""), reps:pe.TargetReps||"", prog:pe.ProgressionRule||"", lib:libraryOptions, onName:(e)=>this.editPe(pe.PlanExerciseID,"ExerciseName",e.target.value), onSets:(e)=>this.editPe(pe.PlanExerciseID,"TargetSets",e.target.value), onReps:(e)=>this.editPe(pe.PlanExerciseID,"TargetReps",e.target.value), onProg:(e)=>this.editPe(pe.PlanExerciseID,"ProgressionRule",e.target.value), onUp:()=>this.movePe(pe.PlanExerciseID,-1), onDown:()=>this.movePe(pe.PlanExerciseID,1), onRemove:()=>this.removePe(pe.PlanExerciseID) })) }));
 
+    // coach (self-only)
+    const adhPct=Math.round(s.sessionsDone/perWeek*100);
+    const rpeVals=s.logs.map(l=>Number(l.RPE)).filter(v=>v>0);
+    const recentRpe=rpeVals.slice(-6);
+    const avgRpe=recentRpe.length?(recentRpe.reduce((a,b)=>a+b,0)/recentRpe.length):0;
+    const recPct= rdToday? Math.round(this.scoreOf(rdToday)/10*100) : 0;
+    const adhColor=adhPct>=80?"#67f4a8":adhPct>=50?"#f4a867":"#f46767";
+    const recColor= recPct===0?"#5a5850": recPct>=70?"#67f4a8":recPct>=45?"#f4a867":"#f46767";
+    const lowRec= recPct>0 && recPct<50, highRpe= avgRpe>=8.5;
+    const selfFlag= (lowRec&&highRpe)?"↓ deload soon":(adhPct>=80?"↑ On track":"→ Keep going");
+    const selfFlagColor=(lowRec&&highRpe)?"#f46767":(adhPct>=80?"#67f4a8":"#f4a867");
+    const selfNote=(lowRec&&highRpe)?"Recovery low + RPE climbing → consider a deload week.":(highRpe?"RPE trending high — watch fatigue.":(recPct===0?"Log a readiness check to track recovery.":"Recovery and load look balanced."));
+    const selfCard={ initials:"ME", name:"You", plan:ap.PlanName+" · Blk "+s.block+" Wk "+s.week, avatarBg:"linear-gradient(135deg,#c5f467,#8bc34a)", border:"#1c1c24", flag:selfFlag, flagColor:selfFlagColor, flagBg:selfFlagColor+"22", adherence:adhPct+"%", adhColor, recovery:recPct?recPct+"%":"—", recColor, rpe:avgRpe?avgRpe.toFixed(1):"—", hasNote:true, note:selfNote };
     // tabs
     const tabDefs=[["log","Log"],["progress","Progress"],["history","History"],["plan","Plan"],["coach","Coach"]];
     const tabs=tabDefs.map(([id,label])=>{ const active=s.view===id; const col=active?"#c5f467":"#5a5850"; return { label, color:col, onPick:()=>this.setState({view:id}), iconEl:React.createElement("span",{dangerouslySetInnerHTML:{__html:ICONS[id].replace(/CUR/g,col)}}) }; });
@@ -721,9 +817,9 @@ class Component extends DCLogic {
       // history
       weeks, hasHistory:weeks.length>0, noHistory:weeks.length===0,
       // plan
-      planName:s.activePlan.PlanName, planDays,
+      planName:ap.PlanName, planDays, planOptions, activePlanId:this.activePlan().PlanID, onSwitchPlan:(e)=>this.setActivePlan(e.target.value), libraryOptions, muscleOptions, onAddDay:()=>this.addDay(), newExName:s.newExName, newExMuscle:s.newExMuscle, onNewExName:(e)=>this.setState({newExName:e.target.value}), onNewExMuscle:(e)=>this.setState({newExMuscle:e.target.value}), onAddNewExercise:()=>this.addNewExercise(),
       // coach
-      coachSummary:DEMO_CLIENTS.length+" clients · 1 needs attention", clients:DEMO_CLIENTS,
+      coachSummary:"Your training · "+ap.PlanName, self:selfCard, goPlan:()=>this.setState({view:"plan"}),
       // tabs
       tabs,
       // settings
