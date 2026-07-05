@@ -1,0 +1,6 @@
+# Review/handoff artifacts (their contents live in src/ and the published files)
+/Fitness tracker review request.zip
+/design_handoff_workout_tracker/
+
+# Local Claude Code preview helper
+/.claude/
