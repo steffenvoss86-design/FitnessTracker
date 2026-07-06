@@ -173,7 +173,7 @@
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;gap:10px;">
           <div style="font-size:10px;font-family:'Space Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:#5a5850;">Weekly muscle loading</div>
           <select value="{{ progressMuscle }}" onChange="{{ onProgressMuscle }}" style="background:#0a0a0e;border:1px solid #262630;border-radius:8px;color:#ece9e3;font-size:12px;font-weight:600;padding:6px 8px;outline:none;cursor:pointer;">
-            <sc-for list="{{ progMuscleOptions }}" as="m" hint-placeholder-count="4"><option value="{{ m }}">{{ m }}</option></sc-for>
+            <sc-for list="{{ progMuscleOptions }}" as="m" hint-placeholder-count="4"><option value="{{ m }}" label="{{ m }}">{{ m }}</option></sc-for>
           </select>
         </div>
         <sc-for list="{{ landmarks }}" as="m" hint-placeholder-count="4">
@@ -199,7 +199,7 @@
       <div style="font-size:11px;font-family:'Space Mono',monospace;letter-spacing:.12em;color:#5a5850;margin-bottom:10px;">EXERCISE DETAIL</div>
       <div style="margin-bottom:12px;">
         <select value="{{ progressEx }}" onChange="{{ onProgressEx }}" style="width:100%;background:#131318;border:1px solid #1c1c24;border-radius:12px;color:#ece9e3;font-size:14px;font-weight:600;padding:13px;outline:none;cursor:pointer;">
-          <sc-for list="{{ exOptions }}" as="o" hint-placeholder-count="6"><option value="{{ o }}">{{ o }}</option></sc-for>
+          <sc-for list="{{ exOptions }}" as="o" hint-placeholder-count="6"><option value="{{ o }}" label="{{ o }}">{{ o }}</option></sc-for>
         </select>
       </div>
 
@@ -275,7 +275,7 @@
     <div style="animation:wtUp .2s ease;">
       <div style="margin-bottom:8px;font-size:11px;font-family:'Space Mono',monospace;letter-spacing:.1em;color:#5a5850;">ACTIVE PLAN</div>
       <select value="{{ activePlanId }}" onChange="{{ onSwitchPlan }}" style="width:100%;background:#131318;border:1px solid #262630;border-radius:12px;color:#ece9e3;font-size:14px;font-weight:700;padding:13px;outline:none;cursor:pointer;">
-        <sc-for list="{{ planOptions }}" as="p" hint-placeholder-count="2"><option value="{{ p.id }}">{{ p.label }}</option></sc-for>
+        <sc-for list="{{ planOptions }}" as="p" hint-placeholder-count="2"><option value="{{ p.id }}" label="{{ p.label }}">{{ p.label }}</option></sc-for>
       </select>
       <div style="font-size:11px;color:#5a5850;margin:6px 2px 14px;">Switching changes what Log &amp; Progress use. Edits save on this device.</div>
 
@@ -290,7 +290,7 @@
             <div style="padding:8px 0;border-top:1px solid #1c1c24;">
               <div style="display:flex;align-items:center;gap:6px;">
                 <select value="{{ pe.name }}" onChange="{{ pe.onName }}" style="flex:1;min-width:0;background:#0a0a0e;border:1px solid #262630;border-radius:8px;color:#ece9e3;font-size:13px;font-weight:600;padding:8px;outline:none;cursor:pointer;">
-                  <sc-for list="{{ pe.lib }}" as="o" hint-placeholder-count="6"><option value="{{ o }}">{{ o }}</option></sc-for>
+                  <sc-for list="{{ pe.lib }}" as="o" hint-placeholder-count="6"><option value="{{ o }}" label="{{ o }}">{{ o }}</option></sc-for>
                 </select>
                 <button onClick="{{ pe.onUp }}" style="background:#1c1c24;border:none;color:#9a9790;border-radius:7px;width:28px;height:30px;cursor:pointer;font-size:12px;flex:none;">↑</button>
                 <button onClick="{{ pe.onDown }}" style="background:#1c1c24;border:none;color:#9a9790;border-radius:7px;width:28px;height:30px;cursor:pointer;font-size:12px;flex:none;">↓</button>
@@ -314,7 +314,7 @@
         <div style="display:flex;gap:6px;">
           <input value="{{ newExName }}" onInput="{{ onNewExName }}" placeholder="Exercise name" style="flex:1;min-width:0;background:#0a0a0e;border:1px solid #262630;border-radius:8px;color:#ece9e3;font-size:13px;padding:9px;outline:none;" />
           <select value="{{ newExMuscle }}" onChange="{{ onNewExMuscle }}" style="width:118px;background:#0a0a0e;border:1px solid #262630;border-radius:8px;color:#ece9e3;font-size:12px;padding:9px;outline:none;cursor:pointer;">
-            <sc-for list="{{ muscleOptions }}" as="m" hint-placeholder-count="8"><option value="{{ m }}">{{ m }}</option></sc-for>
+            <sc-for list="{{ muscleOptions }}" as="m" hint-placeholder-count="8"><option value="{{ m }}" label="{{ m }}">{{ m }}</option></sc-for>
           </select>
         </div>
         <button onClick="{{ onAddNewExercise }}" style="width:100%;margin-top:8px;background:#c5f467;border:none;color:#0a0a0e;font-weight:700;border-radius:9px;padding:10px;cursor:pointer;font-size:13px;">Add to library</button>
