@@ -159,6 +159,43 @@
     <!-- ══════ PROGRESS ══════ -->
     <sc-if value="{{ isProgress }}" hint-placeholder-val="{{ false }}">
     <div style="animation:wtUp .2s ease;">
+
+      <!-- TOP: overview + weekly muscle loading -->
+      <div style="font-size:11px;font-family:'Space Mono',monospace;letter-spacing:.12em;color:#5a5850;margin-bottom:10px;">OVERVIEW · BLK {{ block }} WK {{ week }}</div>
+      <div style="display:flex;gap:8px;margin-bottom:14px;">
+        <div style="flex:1;background:#131318;border:1px solid #1c1c24;border-radius:14px;padding:12px 8px;text-align:center;"><div style="font-family:'Space Mono',monospace;font-size:22px;font-weight:700;">{{ weekSessions }}</div><div style="font-size:9px;font-family:'Space Mono',monospace;text-transform:uppercase;color:#5a5850;margin-top:2px;">Sessions</div></div>
+        <div style="flex:1;background:#131318;border:1px solid #1c1c24;border-radius:14px;padding:12px 8px;text-align:center;"><div style="font-family:'Space Mono',monospace;font-size:22px;font-weight:700;">{{ weekSets }}</div><div style="font-size:9px;font-family:'Space Mono',monospace;text-transform:uppercase;color:#5a5850;margin-top:2px;">Sets</div></div>
+        <div style="flex:1;background:#131318;border:1px solid #1c1c24;border-radius:14px;padding:12px 8px;text-align:center;"><div style="font-family:'Space Mono',monospace;font-size:18px;font-weight:700;">{{ weekVol }}</div><div style="font-size:9px;font-family:'Space Mono',monospace;text-transform:uppercase;color:#5a5850;margin-top:2px;">Volume</div></div>
+      </div>
+
+      <div style="background:#131318;border:1px solid #1c1c24;border-radius:16px;padding:16px;margin-bottom:16px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;gap:10px;">
+          <div style="font-size:10px;font-family:'Space Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:#5a5850;">Weekly muscle loading</div>
+          <select value="{{ progressMuscle }}" onChange="{{ onProgressMuscle }}" style="background:#0a0a0e;border:1px solid #262630;border-radius:8px;color:#ece9e3;font-size:12px;font-weight:600;padding:6px 8px;outline:none;cursor:pointer;">
+            <sc-for list="{{ progMuscleOptions }}" as="m" hint-placeholder-count="4"><option value="{{ m }}">{{ m }}</option></sc-for>
+          </select>
+        </div>
+        <sc-for list="{{ landmarks }}" as="m" hint-placeholder-count="4">
+          <div style="margin-bottom:13px;">
+            <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px;"><span style="color:#ece9e3;">{{ m.muscle }}</span><span style="font-family:'Space Mono',monospace;color:{{ m.color }};">{{ m.sets }} sets · {{ m.status }}</span></div>
+            <div style="height:9px;background:#0a0a0e;border-radius:5px;position:relative;overflow:hidden;"><div style="position:absolute;left:0;top:0;bottom:0;width:{{ m.pct }};background:{{ m.color }};border-radius:5px;"></div><div style="position:absolute;left:{{ m.mev }};top:-2px;bottom:-2px;width:2px;background:#5a5850;"></div><div style="position:absolute;left:{{ m.mrv }};top:-2px;bottom:-2px;width:2px;background:#f46767;"></div></div>
+          </div>
+        </sc-for>
+        <div style="display:flex;gap:14px;margin-top:2px;font-size:10px;font-family:'Space Mono',monospace;color:#5a5850;"><span style="display:flex;align-items:center;gap:5px;"><span style="width:8px;height:2px;background:#5a5850;"></span>MEV</span><span style="display:flex;align-items:center;gap:5px;"><span style="width:8px;height:2px;background:#f46767;"></span>MRV</span></div>
+        <sc-if value="{{ showMuscleTrend }}" hint-placeholder-val="{{ false }}">
+          <div style="margin-top:14px;border-top:1px solid #1c1c24;padding-top:12px;">
+            <div style="font-size:10px;font-family:'Space Mono',monospace;text-transform:uppercase;color:#5a5850;margin-bottom:10px;">{{ muscleSel }} · sets per week</div>
+            <div style="display:flex;align-items:flex-end;gap:6px;height:64px;">
+              <sc-for list="{{ muscleTrend }}" as="t" hint-placeholder-count="6">
+                <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;justify-content:flex-end;height:100%;"><div style="font-size:9px;font-family:'Space Mono',monospace;color:#9a9790;">{{ t.sets }}</div><div style="width:100%;background:#c5f467;border-radius:4px 4px 0 0;height:{{ t.h }};min-height:3px;"></div><div style="font-size:8px;font-family:'Space Mono',monospace;color:#5a5850;">{{ t.wk }}</div></div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+      </div>
+
+      <!-- BOTTOM: per-exercise detail -->
+      <div style="font-size:11px;font-family:'Space Mono',monospace;letter-spacing:.12em;color:#5a5850;margin-bottom:10px;">EXERCISE DETAIL</div>
       <div style="margin-bottom:12px;">
         <select value="{{ progressEx }}" onChange="{{ onProgressEx }}" style="width:100%;background:#131318;border:1px solid #1c1c24;border-radius:12px;color:#ece9e3;font-size:14px;font-weight:600;padding:13px;outline:none;cursor:pointer;">
           <sc-for list="{{ exOptions }}" as="o" hint-placeholder-count="6"><option value="{{ o }}">{{ o }}</option></sc-for>
@@ -166,9 +203,14 @@
       </div>
 
       <div style="background:#131318;border:1px solid #1c1c24;border-radius:16px;padding:16px;margin-bottom:12px;">
+        <div style="display:flex;gap:6px;margin-bottom:14px;">
+          <sc-for list="{{ metricTabs }}" as="t" hint-placeholder-count="4">
+            <button onClick="{{ t.onPick }}" style="flex:1;background:{{ t.bg }};color:{{ t.fg }};border:1px solid {{ t.bd }};border-radius:9px;padding:7px 4px;font-size:11px;font-weight:700;cursor:pointer;">{{ t.label }}</button>
+          </sc-for>
+        </div>
         <div style="display:flex;justify-content:space-between;align-items:flex-start;">
-          <div><div style="font-size:10px;font-family:'Space Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:#5a5850;">Estimated 1RM</div><div style="font-family:'Space Mono',monospace;font-size:38px;font-weight:700;line-height:1.1;">{{ e1rm }}<span style="font-size:18px;color:#9a9790;">{{ unit }}</span></div></div>
-          <span style="display:inline-flex;align-items:center;gap:4px;font-size:12px;font-family:'Space Mono',monospace;color:{{ e1rmDeltaColor }};background:{{ e1rmDeltaBg }};border-radius:7px;padding:5px 9px;">{{ e1rmDelta }}</span>
+          <div><div style="font-size:10px;font-family:'Space Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:#5a5850;">{{ metricLabel }}</div><div style="font-family:'Space Mono',monospace;font-size:38px;font-weight:700;line-height:1.1;">{{ bigVal }}<span style="font-size:18px;color:#9a9790;">{{ metricUnit }}</span></div></div>
+          <span style="display:inline-flex;align-items:center;gap:4px;font-size:12px;font-family:'Space Mono',monospace;color:{{ bigDeltaColor }};background:{{ bigDeltaBg }};border-radius:7px;padding:5px 9px;">{{ bigDelta }}</span>
         </div>
         <svg width="100%" height="90" viewBox="0 0 300 90" preserveAspectRatio="none" style="margin-top:10px;">
           <defs><linearGradient id="wtg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#c5f467" stop-opacity=".35"/><stop offset="1" stop-color="#c5f467" stop-opacity="0"/></linearGradient></defs>
@@ -176,17 +218,11 @@
           <path d="{{ chartLine }}" fill="none" stroke="#c5f467" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
           <circle cx="{{ chartDotX }}" cy="{{ chartDotY }}" r="4" fill="#c5f467"/>
         </svg>
-      </div>
-
-      <div style="background:#131318;border:1px solid #1c1c24;border-radius:16px;padding:16px;margin-bottom:12px;">
-        <div style="font-size:10px;font-family:'Space Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:#5a5850;margin-bottom:14px;">Weekly volume vs landmarks · Blk {{ block }} Wk {{ week }}</div>
-        <sc-for list="{{ landmarks }}" as="m" hint-placeholder-count="4">
-          <div style="margin-bottom:13px;">
-            <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px;"><span style="color:#ece9e3;">{{ m.muscle }}</span><span style="font-family:'Space Mono',monospace;color:{{ m.color }};">{{ m.sets }} sets · {{ m.status }}</span></div>
-            <div style="height:9px;background:#0a0a0e;border-radius:5px;position:relative;overflow:hidden;"><div style="position:absolute;left:0;top:0;bottom:0;width:{{ m.pct }};background:{{ m.color }};border-radius:5px;"></div><div style="position:absolute;left:{{ m.mev }};top:-2px;bottom:-2px;width:2px;background:#5a5850;"></div><div style="position:absolute;left:{{ m.mrv }};top:-2px;bottom:-2px;width:2px;background:#f46767;"></div></div>
-          </div>
-        </sc-for>
-        <div style="display:flex;gap:14px;margin-top:6px;font-size:10px;font-family:'Space Mono',monospace;color:#5a5850;"><span style="display:flex;align-items:center;gap:5px;"><span style="width:8px;height:2px;background:#5a5850;"></span>MEV</span><span style="display:flex;align-items:center;gap:5px;"><span style="width:8px;height:2px;background:#f46767;"></span>MRV</span></div>
+        <div style="display:flex;gap:8px;margin-top:10px;">
+          <div style="flex:1;background:#0a0a0e;border-radius:9px;padding:8px 10px;"><div style="font-size:9px;font-family:'Space Mono',monospace;text-transform:uppercase;color:#5a5850;">Best e1RM</div><div style="font-family:'Space Mono',monospace;font-weight:700;font-size:14px;">{{ bestE1rm }}</div></div>
+          <div style="flex:1;background:#0a0a0e;border-radius:9px;padding:8px 10px;"><div style="font-size:9px;font-family:'Space Mono',monospace;text-transform:uppercase;color:#5a5850;">Top weight</div><div style="font-family:'Space Mono',monospace;font-weight:700;font-size:14px;">{{ lastTop }}</div></div>
+          <div style="flex:1;background:#0a0a0e;border-radius:9px;padding:8px 10px;"><div style="font-size:9px;font-family:'Space Mono',monospace;text-transform:uppercase;color:#5a5850;">Last set</div><div style="font-family:'Space Mono',monospace;font-weight:700;font-size:14px;">{{ lastSet }}</div></div>
+        </div>
       </div>
 
       <div style="background:#131318;border:1px solid #1c1c24;border-radius:16px;padding:16px;">
@@ -547,6 +583,7 @@ const todayStr=()=>new Date().toISOString().slice(0,10);
 const fmtDate=d=>{const dt=new Date(d);return dt.getDate()+"."+(dt.getMonth()+1)+".";};
 function extractSets(l){const s=[];for(let i=1;i<=5;i++){const r=Number(l["S"+i+"Reps"])||0,w=Number(l["S"+i+"Weight"])||0;if(r||w)s.push({reps:r,weight:w});}return s;}
 function topWeight(l){let m=0;for(let i=1;i<=5;i++){const w=Number(l["S"+i+"Weight"])||0;if(w>m)m=w;}return m;}
+function repsAtTop(l){let bw=-1,br=0;for(let i=1;i<=5;i++){const w=Number(l["S"+i+"Weight"])||0,r=Number(l["S"+i+"Reps"])||0;if(r&&w>=bw){bw=w;br=r;}}return br;}
 function totalVol(l){let v=0;for(let i=1;i<=5;i++)v+=(Number(l["S"+i+"Reps"])||0)*(Number(l["S"+i+"Weight"])||0);return v;}
 function e1rmOf(l){let m=0;for(let i=1;i<=5;i++){const r=Number(l["S"+i+"Reps"])||0,w=Number(l["S"+i+"Weight"])||0;if(r&&w){const e=w*(1+r/30);if(e>m)m=e;}}return m;}
 function classifyTrend(curr,prev){ if(!prev)return"new"; const wM=Math.max(0.5,Math.abs(prev.top)*0.015),vM=Math.max(1,Math.abs(prev.vol)*0.015); const wd=curr.top-prev.top,vd=curr.vol-prev.vol; const wUp=wd>wM,wDn=wd<-wM,wSame=!wUp&&!wDn,vUp=vd>vM,vDn=vd<-vM,vSame=!vUp&&!vDn; if(wUp&&(vUp||vSame))return"green"; if(wSame&&vUp)return"green"; if(wUp&&vDn)return"amber"; if(wDn&&vUp)return"amber"; if(wSame&&vSame)return"amber"; return"red"; }
@@ -576,7 +613,7 @@ class Component extends DCLogic {
       rest:{active:false,remaining:0},
       toast:"", prBanner:"",
       readinessMap:LS.getJSON("readiness",{}), rdDraft:{sleep:3,soreness:3,energy:3},
-      progressEx:"Barbell Bench Press", newExName:"", newExMuscle:"Chest",
+      progressEx:"Barbell Bench Press", progressMuscle:"All", progressMetric:"e1rm", newExName:"", newExMuscle:"Chest",
       openWeek:null,
       apiUrl:url, apiKey:key, showToken:false,
       units:LS.get("units","kg"), defaultRest:Number(LS.get("defaultRest","90"))||90,
@@ -598,8 +635,23 @@ class Component extends DCLogic {
       api.setUrl(url); api.setKey(key);
       const data=await api.get("init");
       if(data&&data.ok){
-        this.setState({ exercises:data.exercises||this.state.exercises, synced:true });
-        if(data.activePlan){ const ap=data.activePlan; this.setState(s=>{ let plans=s.plans.map(p=>({...p,IsActive:p.PlanID===ap.PlanID})); if(!plans.some(p=>p.PlanID===ap.PlanID))plans=[...plans,{PlanID:ap.PlanID,PlanName:ap.PlanName,IsActive:true}]; let planExercises=s.planExercises; if(data.planExercises&&data.planExercises.length){ planExercises=[...s.planExercises.filter(x=>x.PlanID!==ap.PlanID),...data.planExercises]; } return {plans,planExercises}; },()=>this.persistPlan()); }
+        // Adopt the Sheet's plan model. init returns: exercises, activePlan (obj),
+        // plans (all), allPlanExercises (all plans'), planExercises (active plan's).
+        const norm=v=>v===true||v==="TRUE"||v==="true"||v===1||v==="1";
+        const exs=(data.exercises&&data.exercises.length)?data.exercises:this.state.exercises;
+        const activeId=data.activePlan&&data.activePlan.PlanID;
+        let plans=this.state.plans, planEx=this.state.planExercises;
+        if(data.plans&&data.plans.length){
+          plans=data.plans.map(p=>({PlanID:p.PlanID,PlanName:p.PlanName||p.PlanID,IsActive:activeId?p.PlanID===activeId:norm(p.IsActive)}));
+          if(!plans.some(p=>p.IsActive))plans[0].IsActive=true;
+          planEx=(data.allPlanExercises&&data.allPlanExercises.length)?data.allPlanExercises
+                :((data.planExercises&&data.planExercises.length)?data.planExercises:planEx);
+        } else if(data.activePlan){ const ap=data.activePlan;
+          plans=this.state.plans.map(p=>({...p,IsActive:p.PlanID===ap.PlanID}));
+          if(!plans.some(p=>p.PlanID===ap.PlanID))plans=[...plans,{PlanID:ap.PlanID,PlanName:ap.PlanName||ap.PlanID,IsActive:true}];
+          if(data.planExercises&&data.planExercises.length)planEx=[...this.state.planExercises.filter(x=>x.PlanID!==ap.PlanID),...data.planExercises];
+        }
+        this.setState({exercises:exs,plans,planExercises:planEx,synced:true},()=>this.persistPlan());
       }
       const hist=await api.get("history",{limit:"500"});
       if(hist&&hist.ok&&hist.sessions){
@@ -737,19 +789,39 @@ class Component extends DCLogic {
         adjShow: !!rdToday && rdMode!=="push", adjLabel: rdMode==="backoff"?"−10% today":"held", adjColor: rdMode==="backoff"?"#f46767":"#f4a867", adjBg: rdMode==="backoff"?"rgba(244,103,103,.12)":"rgba(244,168,103,.12)" };
     });
 
-    // progress vm
+    // progress vm — TOP: this-week overview + weekly muscle loading
+    const wkLogs=s.logs.filter(l=>(Number(l.Week)||1)===s.week&&(Number(l.Block)||1)===s.block);
+    const weekSessions=[...new Set(wkLogs.map(l=>l.Date))].length;
+    const weekSets=wkLogs.reduce((a,l)=>a+extractSets(l).length,0);
+    const weekVol=Math.round(wkLogs.reduce((a,l)=>a+totalVol(l),0));
+    const setCount={}; wkLogs.forEach(l=>{ const ex=exMap[l.ExerciseName]; if(!ex)return; setCount[ex.MuscleGroup]=(setCount[ex.MuscleGroup]||0)+extractSets(l).length; });
+    const allLandmarks=Object.keys(LANDMARKS).filter(m=>setCount[m]!==undefined).map(m=>{ const [mev,mrv]=LANDMARKS[m]; const c=setCount[m]||0; const status=c<mev?"under MEV":c>mrv?"over MRV":"optimal"; const col=c<mev?"#f4a867":c>mrv?"#f46767":"#67f4a8"; return { muscle:m, sets:c, status, color:col, pct:Math.min(100,c/(mrv*1.15)*100)+"%", mev:(mev/(mrv*1.15)*100)+"%", mrv:(mrv/(mrv*1.15)*100)+"%" }; });
+    const muscleSel=s.progressMuscle||"All";
+    const progMuscleOptions=["All",...Object.keys(LANDMARKS).filter(m=>setCount[m]!==undefined)];
+    const landmarks= muscleSel==="All"?allLandmarks:allLandmarks.filter(m=>m.muscle===muscleSel);
+    const byWk={}; s.logs.forEach(l=>{ const ex=exMap[l.ExerciseName]; if(!ex)return; const k=(Number(l.Block)||1)+"·"+(Number(l.Week)||1); byWk[k]=byWk[k]||{}; byWk[k][ex.MuscleGroup]=(byWk[k][ex.MuscleGroup]||0)+extractSets(l).length; });
+    const wkKeys=Object.keys(byWk).sort((a,b)=>a.localeCompare(b));
+    let muscleTrend=[]; if(muscleSel!=="All"){ const vals=wkKeys.map(k=>byWk[k][muscleSel]||0); const mx=Math.max(1,...vals); muscleTrend=wkKeys.slice(-8).map(k=>({ wk:k, sets:byWk[k][muscleSel]||0, h:Math.round((byWk[k][muscleSel]||0)/mx*100)+"%" })); }
+    const showMuscleTrend= muscleSel!=="All" && muscleTrend.length>0;
+    // progress vm — BOTTOM: per-exercise detail (load / reps / max weight / e1RM)
     const exOptions=[...new Set(s.logs.map(l=>l.ExerciseName))];
     if(!exOptions.includes(s.progressEx)&&exOptions.length)exOptions.unshift(s.progressEx);
+    const metric=s.progressMetric||"e1rm";
+    const metricVal=(l)=> metric==="top"?topWeight(l): metric==="vol"?totalVol(l): metric==="reps"?repsAtTop(l): e1rmOf(l);
     const pLogs=s.logs.filter(l=>l.ExerciseName===s.progressEx).sort((a,b)=>a.Date.localeCompare(b.Date));
-    const series=pLogs.map(l=>({v:e1rmOf(l)}));
+    const series=pLogs.map(l=>({v:metricVal(l)}));
     const chart=buildChart(series);
-    const e1rm= series.length?Math.round(series[series.length-1].v):0;
-    let e1rmDelta="—", e1rmDeltaColor="#5a5850", e1rmDeltaBg="#1c1c24";
-    if(series.length>=2){ const d=Math.round(series[series.length-1].v-series[0].v); e1rmDelta=(d>=0?"+":"")+d+U; e1rmDeltaColor=d>=0?"#67f4a8":"#f46767"; e1rmDeltaBg=d>=0?"rgba(103,244,168,.12)":"rgba(244,103,103,.12)"; }
-    // volume landmarks (current block/week)
-    const wkLogs=s.logs.filter(l=>(Number(l.Week)||1)===s.week&&(Number(l.Block)||1)===s.block);
-    const setCount={}; wkLogs.forEach(l=>{ const ex=exMap[l.ExerciseName]; if(!ex)return; setCount[ex.MuscleGroup]=(setCount[ex.MuscleGroup]||0)+extractSets(l).length; });
-    const landmarks=Object.keys(LANDMARKS).filter(m=>setCount[m]!==undefined).map(m=>{ const [mev,mrv]=LANDMARKS[m]; const c=setCount[m]||0; const status=c<mev?"under MEV":c>mrv?"over MRV":"optimal"; const col=c<mev?"#f4a867":c>mrv?"#f46767":"#67f4a8"; return { muscle:m, sets:c, status, color:col, pct:Math.min(100,c/(mrv*1.15)*100)+"%", mev:(mev/(mrv*1.15)*100)+"%", mrv:(mrv/(mrv*1.15)*100)+"%" }; });
+    const metricUnit= metric==="reps"?"":U;
+    const bigVal= series.length?Math.round(series[series.length-1].v):0;
+    let bigDelta="—", bigDeltaColor="#5a5850", bigDeltaBg="#1c1c24";
+    if(series.length>=2){ const d=Math.round(series[series.length-1].v-series[0].v); bigDelta=(d>=0?"+":"")+d+metricUnit; bigDeltaColor=d>=0?"#67f4a8":"#f46767"; bigDeltaBg=d>=0?"rgba(103,244,168,.12)":"rgba(244,103,103,.12)"; }
+    const metricLabel={e1rm:"Estimated 1RM",top:"Top weight",reps:"Reps @ top set",vol:"Session volume"}[metric];
+    const metricTabs=[["e1rm","Est 1RM"],["top","Top wt"],["reps","Reps"],["vol","Volume"]].map(([k,lab])=>({ label:lab, bg:metric===k?"#c5f467":"#0a0a0e", fg:metric===k?"#0a0a0e":"#5a5850", bd:metric===k?"#c5f467":"#262630", onPick:()=>this.setState({progressMetric:k}) }));
+    const lastLog=pLogs[pLogs.length-1];
+    const bestE1rm=pLogs.length?Math.round(Math.max(...pLogs.map(e1rmOf))):0;
+    const lastTop=lastLog?Math.round(topWeight(lastLog)):0;
+    const lastSetArr=lastLog?extractSets(lastLog):[];
+    const lastSet=lastSetArr.length?(lastSetArr[lastSetArr.length-1].reps+"×"+lastSetArr[lastSetArr.length-1].weight+U):"—";
     // PR feed
     const prByEx={}; [...s.logs].sort((a,b)=>a.Date.localeCompare(b.Date)).forEach(l=>{ const e=e1rmOf(l); const cur=prByEx[l.ExerciseName]; if(!cur||e>cur.e){ prByEx[l.ExerciseName]={e,top:topWeight(l),date:l.Date,name:l.ExerciseName}; } });
     const prFeed=Object.values(prByEx).sort((a,b)=>b.date.localeCompare(a.date)).slice(0,4).map((p,i)=>({ name:p.name, value:Math.round(p.top)+U, when:fmtDate(p.date), color:i===0?"#c5f467":"#9a9790" }));
@@ -758,9 +830,9 @@ class Component extends DCLogic {
     const weeks=this.calendarWeeks().map((w,idx)=>({ title:"Block "+w.block+" · Week "+w.week, meta:w.dates[0]+(w.dates.length>1?" → "+w.dates[w.dates.length-1]:"")+" · "+w.sessionCount+" sessions", vol:Math.round(w.vol)+U, open:s.openWeek===idx, onToggle:()=>this.setState(st=>({openWeek:st.openWeek===idx?null:idx})), onCopy:()=>this.copyWhoop(idx), days:w.days.map(dd=>{ const dm=daysMap[dd.dayNumber]; return { title:(dm?dm.label+" · "+dm.name:"Day "+dd.dayNumber)+"  "+dd.date, entries:dd.entries.map(en=>({ name:en.name, trendColor:TREND[en.trend].c, sets:en.setsRaw })) }; }) }));
 
     // plan
-    const libraryOptions=s.exercises.map(e=>e.ExerciseName);
+    const libraryOptions=[...new Set([...s.exercises.map(e=>e.ExerciseName).filter(Boolean),...s.planExercises.map(pe=>pe.ExerciseName).filter(Boolean)])];
     const muscleOptions=Object.keys(MUSCLE_COLORS);
-    const planOptions=s.plans.map(p=>({ id:p.PlanID, label:p.PlanName+(p.IsActive?" · active":"") }));
+    const planOptions=s.plans.map(p=>({ id:p.PlanID, label:(p.PlanName||p.PlanID)+(p.IsActive?" · active":"") }));
     const planDays=dayList.map(d=>({ label:d.label, name:d.name, onLabel:(e)=>this.editDay(d.num,"DayLabel",e.target.value), onName:(e)=>this.editDay(d.num,"DayName",e.target.value), onAddEx:()=>this.addPeToDay(d.num), onRemoveDay:()=>this.removeDay(d.num), exercises:d.exercises.map(pe=>({ name:pe.ExerciseName, sets:String(pe.TargetSets||""), reps:pe.TargetReps||"", prog:pe.ProgressionRule||"", lib:libraryOptions, onName:(e)=>this.editPe(pe.PlanExerciseID,"ExerciseName",e.target.value), onSets:(e)=>this.editPe(pe.PlanExerciseID,"TargetSets",e.target.value), onReps:(e)=>this.editPe(pe.PlanExerciseID,"TargetReps",e.target.value), onProg:(e)=>this.editPe(pe.PlanExerciseID,"ProgressionRule",e.target.value), onUp:()=>this.movePe(pe.PlanExerciseID,-1), onDown:()=>this.movePe(pe.PlanExerciseID,1), onRemove:()=>this.removePe(pe.PlanExerciseID) })) }));
 
     // coach (self-only)
@@ -809,11 +881,17 @@ class Component extends DCLogic {
       dayChips, exercises:logExercises, note:s.note, onNote:(e)=>this.setState({note:e.target.value}), onSave:()=>this.saveSession(),
       // review
       startNextBlock:()=>this.startNextBlock(), repeatBlock:()=>this.repeatBlock(), closeReview:()=>this.closeReview(),
-      // progress
+      // progress — top (overview + muscle loading)
+      weekSessions, weekSets, weekVol:weekVol+U,
+      progMuscleOptions, progressMuscle:muscleSel, onProgressMuscle:(e)=>this.setState({progressMuscle:e.target.value}),
+      landmarks, showMuscleTrend, muscleTrend, muscleSel,
+      // progress — bottom (exercise detail)
       exOptions, progressEx:s.progressEx, onProgressEx:(e)=>this.setState({progressEx:e.target.value}), unit:U,
-      e1rm, e1rmDelta, e1rmDeltaColor, e1rmDeltaBg,
+      metricTabs, metricLabel, metricUnit,
+      bigVal, bigDelta, bigDeltaColor, bigDeltaBg,
+      bestE1rm:bestE1rm+U, lastTop:lastTop+U, lastSet,
       chartLine:chart.line, chartArea:chart.area, chartDotX:chart.dotX, chartDotY:chart.dotY,
-      landmarks, prFeed, hasPRs:prFeed.length>0, noPRs:prFeed.length===0,
+      prFeed, hasPRs:prFeed.length>0, noPRs:prFeed.length===0,
       // history
       weeks, hasHistory:weeks.length>0, noHistory:weeks.length===0,
       // plan
