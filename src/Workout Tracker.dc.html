@@ -15,6 +15,7 @@
   body{margin:0;background:#050507;}
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
   input,button,textarea,select{font-family:inherit;}
+  select{-webkit-appearance:none;-moz-appearance:none;appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239a9790' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><path d='M6 9l6 6 6-6'/></svg>')!important;background-repeat:no-repeat!important;background-position:right 10px center!important;padding-right:30px!important;}
   input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
   input[type=number]{-moz-appearance:textfield}
   ::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-thumb{background:#262630;border-radius:3px}
@@ -743,6 +744,7 @@ class Component extends DCLogic {
   exportCsv(){ const rows=[["Date","Day","Exercise","Sets","RPE","Note","Week","Block"]]; this.state.logs.forEach(l=>{ rows.push([l.Date,l.DayNumber,l.ExerciseName,extractSets(l).map(s=>s.reps+"x"+s.weight).join(" "),l.RPE,l.Note,l.Week,l.Block]); }); const csv=rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(",")).join("\n"); try{ const bl=new Blob([csv],{type:"text/csv"}); const a=document.createElement("a"); a.href=URL.createObjectURL(bl); a.download="workout-export.csv"; a.click(); this.flash("Exported CSV"); }catch(e){ this.flash("Export failed"); } }
 
   renderVals(){
+   try{
     const s=this.state; const U=s.units;
     const daysMap=this.daysMap(); const dayList=this.dayList(); const activeDay=daysMap[s.activeDay]||dayList[0];
     const exMap={}; s.exercises.forEach(e=>exMap[e.ExerciseName]=e);
@@ -914,6 +916,7 @@ class Component extends DCLogic {
       kgBg:U==="kg"?"#c5f467":"#0a0a0e", kgFg:U==="kg"?"#0a0a0e":"#5a5850", lbBg:U==="lb"?"#c5f467":"#0a0a0e", lbFg:U==="lb"?"#0a0a0e":"#5a5850", setKg:()=>this.setUnits("kg"), setLb:()=>this.setUnits("lb"),
       exportCsv:()=>this.exportCsv(),
     };
+   }catch(__err){ try{ var __d=document.getElementById('__app_err')||document.body.appendChild(document.createElement('div')); __d.id='__app_err'; __d.style.cssText='position:fixed;bottom:12px;left:12px;right:12px;z-index:2147483647;background:#2a1215;color:#ff8a80;font:11px/1.45 ui-monospace,monospace;padding:10px 12px;border-radius:8px;border:1px solid #5c2b2e;white-space:pre-wrap;max-height:60vh;overflow:auto'; __d.textContent='[render] '+((__err&&__err.message)||__err)+String.fromCharCode(10)+((__err&&__err.stack)||''); }catch(_){} throw __err; }
   }
 }
 
