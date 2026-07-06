@@ -628,6 +628,24 @@ class Component extends DCLogic {
     this._interval=setInterval(()=>{ if(this.state.rest.active){ this.setState(s=>{ const r=Math.max(0,s.rest.remaining-1); return {rest:{active:r>0,remaining:r}}; }); } },1000);
     const {apiUrl,apiKey}=this.state;
     if(apiUrl){ this.syncFromApi(apiUrl,apiKey); }
+    // On-device dropdown diagnostics: append ?diag=1 to the URL to show a panel.
+    if(location.search.indexOf('diag')>-1){
+      const dp=document.createElement('div');
+      dp.style.cssText='position:fixed;top:0;left:0;right:0;z-index:2147483647;background:#0b1a0b;color:#c5f467;font:10px/1.35 ui-monospace,monospace;padding:8px 10px;white-space:pre-wrap;max-height:55vh;overflow:auto;border-bottom:1px solid #2a3a14';
+      (document.body||document.documentElement).appendChild(dp);
+      setInterval(()=>{ try{
+        if(document.body&&dp.parentNode!==document.body)document.body.appendChild(dp);
+        const sels=document.querySelectorAll('#dc-root select'); const N=String.fromCharCode(10);
+        let out='UA '+navigator.userAgent.slice(0,68)+N+'selects on page='+sels.length+N;
+        const lim=sels.length<4?sels.length:4;
+        for(let i=0;i<lim;i++){ const s=sels[i],cs=getComputedStyle(s),o=s.options[s.selectedIndex];
+          out+='#'+i+' val="'+s.value+'" idx='+s.selectedIndex+' opts='+s.options.length
+             +' selText="'+(o?o.text:'')+'" labelAttr="'+(o?(o.getAttribute('label')||''):'')+'" optKids='+(o?o.childElementCount:'-')
+             +' wh='+Math.round(s.offsetWidth)+'x'+Math.round(s.offsetHeight)+' col='+cs.color+' fill='+(cs.webkitTextFillColor||'?')+' app='+(cs.webkitAppearance||cs.appearance)+N;
+        }
+        dp.textContent=out;
+      }catch(e){ dp.textContent='diag error: '+(e&&e.message); } },600);
+    }
   }
   componentWillUnmount(){ if(this._interval)clearInterval(this._interval); }
 
