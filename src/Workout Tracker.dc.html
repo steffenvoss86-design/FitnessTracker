@@ -172,9 +172,7 @@
       <div style="background:#131318;border:1px solid #1c1c24;border-radius:16px;padding:16px;margin-bottom:16px;">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;gap:10px;">
           <div style="font-size:10px;font-family:'Space Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:#5a5850;">Weekly muscle loading</div>
-          <select value="{{ progressMuscle }}" onChange="{{ onProgressMuscle }}" style="background:#0a0a0e;border:1px solid #262630;border-radius:8px;color:#ece9e3;font-size:12px;font-weight:600;padding:6px 8px;outline:none;cursor:pointer;">
-            <sc-for list="{{ progMuscleOptions }}" as="m" hint-placeholder-count="4"><option value="{{ m }}" label="{{ m }}">{{ m }}</option></sc-for>
-          </select>
+          {{ musSel }}
         </div>
         <sc-for list="{{ landmarks }}" as="m" hint-placeholder-count="4">
           <div style="margin-bottom:13px;">
@@ -198,9 +196,7 @@
       <!-- BOTTOM: per-exercise detail -->
       <div style="font-size:11px;font-family:'Space Mono',monospace;letter-spacing:.12em;color:#5a5850;margin-bottom:10px;">EXERCISE DETAIL</div>
       <div style="margin-bottom:12px;">
-        <select value="{{ progressEx }}" onChange="{{ onProgressEx }}" style="width:100%;background:#131318;border:1px solid #1c1c24;border-radius:12px;color:#ece9e3;font-size:14px;font-weight:600;padding:13px;outline:none;cursor:pointer;">
-          <sc-for list="{{ exOptions }}" as="o" hint-placeholder-count="6"><option value="{{ o }}" label="{{ o }}">{{ o }}</option></sc-for>
-        </select>
+        {{ exSel }}
       </div>
 
       <div style="background:#131318;border:1px solid #1c1c24;border-radius:16px;padding:16px;margin-bottom:12px;">
@@ -274,9 +270,7 @@
     <sc-if value="{{ isPlan }}" hint-placeholder-val="{{ false }}">
     <div style="animation:wtUp .2s ease;">
       <div style="margin-bottom:8px;font-size:11px;font-family:'Space Mono',monospace;letter-spacing:.1em;color:#5a5850;">ACTIVE PLAN</div>
-      <select value="{{ activePlanId }}" onChange="{{ onSwitchPlan }}" style="width:100%;background:#131318;border:1px solid #262630;border-radius:12px;color:#ece9e3;font-size:14px;font-weight:700;padding:13px;outline:none;cursor:pointer;">
-        <sc-for list="{{ planOptions }}" as="p" hint-placeholder-count="2"><option value="{{ p.id }}" label="{{ p.label }}">{{ p.label }}</option></sc-for>
-      </select>
+      {{ planSel }}
       <div style="font-size:11px;color:#5a5850;margin:6px 2px 14px;">Switching changes what Log &amp; Progress use. Edits save on this device.</div>
 
       <sc-for list="{{ planDays }}" as="d" hint-placeholder-count="5">
@@ -289,9 +283,7 @@
           <sc-for list="{{ d.exercises }}" as="pe" hint-placeholder-count="4">
             <div style="padding:8px 0;border-top:1px solid #1c1c24;">
               <div style="display:flex;align-items:center;gap:6px;">
-                <select value="{{ pe.name }}" onChange="{{ pe.onName }}" style="flex:1;min-width:0;background:#0a0a0e;border:1px solid #262630;border-radius:8px;color:#ece9e3;font-size:13px;font-weight:600;padding:8px;outline:none;cursor:pointer;">
-                  <sc-for list="{{ pe.lib }}" as="o" hint-placeholder-count="6"><option value="{{ o }}" label="{{ o }}">{{ o }}</option></sc-for>
-                </select>
+                {{ pe.sel }}
                 <button onClick="{{ pe.onUp }}" style="background:#1c1c24;border:none;color:#9a9790;border-radius:7px;width:28px;height:30px;cursor:pointer;font-size:12px;flex:none;">↑</button>
                 <button onClick="{{ pe.onDown }}" style="background:#1c1c24;border:none;color:#9a9790;border-radius:7px;width:28px;height:30px;cursor:pointer;font-size:12px;flex:none;">↓</button>
                 <button onClick="{{ pe.onRemove }}" style="background:#1c1c24;border:none;color:#f46767;border-radius:7px;width:28px;height:30px;cursor:pointer;font-size:14px;flex:none;">×</button>
@@ -313,9 +305,7 @@
         <div style="font-size:12px;font-weight:700;margin-bottom:8px;">Add a new exercise to your library</div>
         <div style="display:flex;gap:6px;">
           <input value="{{ newExName }}" onInput="{{ onNewExName }}" placeholder="Exercise name" style="flex:1;min-width:0;background:#0a0a0e;border:1px solid #262630;border-radius:8px;color:#ece9e3;font-size:13px;padding:9px;outline:none;" />
-          <select value="{{ newExMuscle }}" onChange="{{ onNewExMuscle }}" style="width:118px;background:#0a0a0e;border:1px solid #262630;border-radius:8px;color:#ece9e3;font-size:12px;padding:9px;outline:none;cursor:pointer;">
-            <sc-for list="{{ muscleOptions }}" as="m" hint-placeholder-count="8"><option value="{{ m }}" label="{{ m }}">{{ m }}</option></sc-for>
-          </select>
+          {{ newMusSel }}
         </div>
         <button onClick="{{ onAddNewExercise }}" style="width:100%;margin-top:8px;background:#c5f467;border:none;color:#0a0a0e;font-weight:700;border-radius:9px;padding:10px;cursor:pointer;font-size:13px;">Add to library</button>
       </div>
@@ -853,7 +843,19 @@ class Component extends DCLogic {
     const libraryOptions=[...new Set([...s.exercises.map(e=>e.ExerciseName).filter(Boolean),...s.planExercises.map(pe=>pe.ExerciseName).filter(Boolean)])];
     const muscleOptions=Object.keys(MUSCLE_COLORS);
     const planOptions=s.plans.map(p=>({ id:p.PlanID, label:(p.PlanName||p.PlanID)+(p.IsActive?" · active":"") }));
-    const planDays=dayList.map(d=>({ label:d.label, name:d.name, onLabel:(e)=>this.editDay(d.num,"DayLabel",e.target.value), onName:(e)=>this.editDay(d.num,"DayName",e.target.value), onAddEx:()=>this.addPeToDay(d.num), onRemoveDay:()=>this.removeDay(d.num), exercises:d.exercises.map(pe=>({ name:pe.ExerciseName, sets:String(pe.TargetSets||""), reps:pe.TargetReps||"", prog:pe.ProgressionRule||"", lib:libraryOptions, onName:(e)=>this.editPe(pe.PlanExerciseID,"ExerciseName",e.target.value), onSets:(e)=>this.editPe(pe.PlanExerciseID,"TargetSets",e.target.value), onReps:(e)=>this.editPe(pe.PlanExerciseID,"TargetReps",e.target.value), onProg:(e)=>this.editPe(pe.PlanExerciseID,"ProgressionRule",e.target.value), onUp:()=>this.movePe(pe.PlanExerciseID,-1), onDown:()=>this.movePe(pe.PlanExerciseID,1), onRemove:()=>this.removePe(pe.PlanExerciseID) })) }));
+    // Build <select>s as React elements (options as text nodes). The template engine's
+    // <sc-for><option> is dropped by the HTML parser inside <select> on iOS Safari, so we
+    // create them programmatically instead — works cross-browser like the legacy app did.
+    const mkSel=(value,onChange,options,style)=>React.createElement("select",{value:value,onChange:onChange,style:style},options.map(o=>React.createElement("option",{value:o.value,key:String(o.value)},o.label)));
+    const selFull={width:"100%",backgroundColor:"#131318",border:"1px solid #1c1c24",borderRadius:"12px",color:"#ece9e3",fontSize:"14px",fontWeight:"600",padding:"13px",outline:"none",cursor:"pointer"};
+    const selCompact={backgroundColor:"#0a0a0e",border:"1px solid #262630",borderRadius:"8px",color:"#ece9e3",fontSize:"12px",fontWeight:"600",padding:"6px 8px",outline:"none",cursor:"pointer"};
+    const selRow={flex:"1",minWidth:0,backgroundColor:"#0a0a0e",border:"1px solid #262630",borderRadius:"8px",color:"#ece9e3",fontSize:"13px",fontWeight:"600",padding:"8px",outline:"none",cursor:"pointer"};
+    const selNewMus={width:"118px",backgroundColor:"#0a0a0e",border:"1px solid #262630",borderRadius:"8px",color:"#ece9e3",fontSize:"12px",padding:"9px",outline:"none",cursor:"pointer"};
+    const planSel=mkSel(this.activePlan().PlanID,(e)=>this.setActivePlan(e.target.value),planOptions.map(p=>({value:p.id,label:p.label})),selFull);
+    const newMusSel=mkSel(s.newExMuscle,(e)=>this.setState({newExMuscle:e.target.value}),muscleOptions.map(m=>({value:m,label:m})),selNewMus);
+    const exSel=mkSel(s.progressEx,(e)=>this.setState({progressEx:e.target.value}),exOptions.map(o=>({value:o,label:o})),selFull);
+    const musSel=mkSel(muscleSel,(e)=>this.setState({progressMuscle:e.target.value}),progMuscleOptions.map(m=>({value:m,label:m})),selCompact);
+    const planDays=dayList.map(d=>({ label:d.label, name:d.name, onLabel:(e)=>this.editDay(d.num,"DayLabel",e.target.value), onName:(e)=>this.editDay(d.num,"DayName",e.target.value), onAddEx:()=>this.addPeToDay(d.num), onRemoveDay:()=>this.removeDay(d.num), exercises:d.exercises.map(pe=>({ sel:mkSel(pe.ExerciseName,(e)=>this.editPe(pe.PlanExerciseID,"ExerciseName",e.target.value),libraryOptions.map(o=>({value:o,label:o})),selRow), name:pe.ExerciseName, sets:String(pe.TargetSets||""), reps:pe.TargetReps||"", prog:pe.ProgressionRule||"", lib:libraryOptions, onName:(e)=>this.editPe(pe.PlanExerciseID,"ExerciseName",e.target.value), onSets:(e)=>this.editPe(pe.PlanExerciseID,"TargetSets",e.target.value), onReps:(e)=>this.editPe(pe.PlanExerciseID,"TargetReps",e.target.value), onProg:(e)=>this.editPe(pe.PlanExerciseID,"ProgressionRule",e.target.value), onUp:()=>this.movePe(pe.PlanExerciseID,-1), onDown:()=>this.movePe(pe.PlanExerciseID,1), onRemove:()=>this.removePe(pe.PlanExerciseID) })) }));
 
     // coach (self-only)
     const adhPct=Math.round(s.sessionsDone/perWeek*100);
@@ -915,6 +917,7 @@ class Component extends DCLogic {
       // history
       weeks, hasHistory:weeks.length>0, noHistory:weeks.length===0,
       // plan
+      planSel, newMusSel, exSel, musSel,
       planName:ap.PlanName, planDays, planOptions, activePlanId:this.activePlan().PlanID, onSwitchPlan:(e)=>this.setActivePlan(e.target.value), libraryOptions, muscleOptions, onAddDay:()=>this.addDay(), newExName:s.newExName, newExMuscle:s.newExMuscle, onNewExName:(e)=>this.setState({newExName:e.target.value}), onNewExMuscle:(e)=>this.setState({newExMuscle:e.target.value}), onAddNewExercise:()=>this.addNewExercise(),
       // coach
       coachSummary:"Your training · "+ap.PlanName, self:selfCard, goPlan:()=>this.setState({view:"plan"}),
