@@ -618,24 +618,6 @@ class Component extends DCLogic {
     this._interval=setInterval(()=>{ if(this.state.rest.active){ this.setState(s=>{ const r=Math.max(0,s.rest.remaining-1); return {rest:{active:r>0,remaining:r}}; }); } },1000);
     const {apiUrl,apiKey}=this.state;
     if(apiUrl){ this.syncFromApi(apiUrl,apiKey); }
-    // On-device dropdown diagnostics: append ?diag=1 to the URL to show a panel.
-    if(location.search.indexOf('diag')>-1){
-      const dp=document.createElement('div');
-      dp.style.cssText='position:fixed;top:0;left:0;right:0;z-index:2147483647;background:#0b1a0b;color:#c5f467;font:10px/1.35 ui-monospace,monospace;padding:8px 10px;white-space:pre-wrap;max-height:55vh;overflow:auto;border-bottom:1px solid #2a3a14';
-      (document.body||document.documentElement).appendChild(dp);
-      setInterval(()=>{ try{
-        if(document.body&&dp.parentNode!==document.body)document.body.appendChild(dp);
-        const sels=document.querySelectorAll('#dc-root select'); const N=String.fromCharCode(10);
-        let out='UA '+navigator.userAgent.slice(0,68)+N+'selects on page='+sels.length+N;
-        const lim=sels.length<4?sels.length:4;
-        for(let i=0;i<lim;i++){ const s=sels[i],cs=getComputedStyle(s),o=s.options[s.selectedIndex];
-          out+='#'+i+' val="'+s.value+'" idx='+s.selectedIndex+' opts='+s.options.length
-             +' selText="'+(o?o.text:'')+'" labelAttr="'+(o?(o.getAttribute('label')||''):'')+'" optKids='+(o?o.childElementCount:'-')
-             +' wh='+Math.round(s.offsetWidth)+'x'+Math.round(s.offsetHeight)+' col='+cs.color+' fill='+(cs.webkitTextFillColor||'?')+' app='+(cs.webkitAppearance||cs.appearance)+N;
-        }
-        dp.textContent=out;
-      }catch(e){ dp.textContent='diag error: '+(e&&e.message); } },600);
-    }
   }
   componentWillUnmount(){ if(this._interval)clearInterval(this._interval); }
 
@@ -752,7 +734,6 @@ class Component extends DCLogic {
   exportCsv(){ const rows=[["Date","Day","Exercise","Sets","RPE","Note","Week","Block"]]; this.state.logs.forEach(l=>{ rows.push([l.Date,l.DayNumber,l.ExerciseName,extractSets(l).map(s=>s.reps+"x"+s.weight).join(" "),l.RPE,l.Note,l.Week,l.Block]); }); const csv=rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(",")).join("\n"); try{ const bl=new Blob([csv],{type:"text/csv"}); const a=document.createElement("a"); a.href=URL.createObjectURL(bl); a.download="workout-export.csv"; a.click(); this.flash("Exported CSV"); }catch(e){ this.flash("Export failed"); } }
 
   renderVals(){
-   try{
     const s=this.state; const U=s.units;
     const daysMap=this.daysMap(); const dayList=this.dayList(); const activeDay=daysMap[s.activeDay]||dayList[0];
     const exMap={}; s.exercises.forEach(e=>exMap[e.ExerciseName]=e);
@@ -937,7 +918,6 @@ class Component extends DCLogic {
       kgBg:U==="kg"?"#c5f467":"#0a0a0e", kgFg:U==="kg"?"#0a0a0e":"#5a5850", lbBg:U==="lb"?"#c5f467":"#0a0a0e", lbFg:U==="lb"?"#0a0a0e":"#5a5850", setKg:()=>this.setUnits("kg"), setLb:()=>this.setUnits("lb"),
       exportCsv:()=>this.exportCsv(),
     };
-   }catch(__err){ try{ var __d=document.getElementById('__app_err')||document.body.appendChild(document.createElement('div')); __d.id='__app_err'; __d.style.cssText='position:fixed;bottom:12px;left:12px;right:12px;z-index:2147483647;background:#2a1215;color:#ff8a80;font:11px/1.45 ui-monospace,monospace;padding:10px 12px;border-radius:8px;border:1px solid #5c2b2e;white-space:pre-wrap;max-height:60vh;overflow:auto'; __d.textContent='[render] '+((__err&&__err.message)||__err)+String.fromCharCode(10)+((__err&&__err.stack)||''); }catch(_){} throw __err; }
   }
 }
 
